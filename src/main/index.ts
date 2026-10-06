@@ -6,6 +6,7 @@ import { startSelectionHelper } from './selection'
 import { getActiveProviders, getShortcuts } from './settings'
 import { initShortcuts } from './shortcut'
 import { createTray, notify } from './tray'
+import { checkForUpdates, initUpdater } from './updater'
 import { createFloatingWindow, openView, showWindow } from './window'
 
 // Optional .env at the project root (see .env.example) for development.
@@ -36,7 +37,8 @@ if (!app.requestSingleInstanceLock()) {
       onListen: () => void startSessionFromClipboard({ direction: 'to-english', speak: true }),
       onPortuguese: () => void startSessionFromClipboard({ direction: 'to-portuguese' }),
       onOpen: showWindow,
-      onSettings: () => void openView('settings')
+      onSettings: () => void openView('settings'),
+      onCheckForUpdates: () => void checkForUpdates(true)
     })
 
     const unavailable = initShortcuts({
@@ -50,6 +52,8 @@ if (!app.requestSingleInstanceLock()) {
       const keys = unavailable.map((action) => formatAccelerator(shortcuts[action]).join('+')).join(' e ')
       notify('Atalho indisponível', `${keys}: já em uso por outro aplicativo. Troque em Configurações → Atalhos.`)
     }
+
+    initUpdater()
 
     // First run: nothing works without a provider, so start on the settings screen.
     if (getActiveProviders().length === 0) void openView('settings')

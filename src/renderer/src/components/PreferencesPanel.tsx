@@ -11,10 +11,11 @@ type PreferencesPanelProps = {
   preferences: Preferences
   /** The natural voice needs the key of the Gemini provider. */
   geminiKey: boolean
+  version: string
   onChanged: () => void
 }
 
-export function PreferencesPanel({ preferences, geminiKey, onChanged }: PreferencesPanelProps) {
+export function PreferencesPanel({ preferences, geminiKey, version, onChanged }: PreferencesPanelProps) {
   const [glossary, setGlossary] = useState(preferences.glossary)
 
   const save = async (patch: Partial<Preferences>) => {
@@ -79,6 +80,17 @@ export function PreferencesPanel({ preferences, geminiKey, onChanged }: Preferen
           className="scroll-thin mt-1.5 w-full select-text resize-none rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 font-mono text-[12.5px] leading-5 text-zinc-100 transition-colors placeholder:text-zinc-600 hover:border-white/20 focus:border-indigo-400/60 focus:bg-white/[0.06] focus:outline-none focus:ring-2 focus:ring-indigo-400/25"
         />
       </div>
+
+      <p className="text-[11.5px] text-zinc-500">
+        English Assist {version} ·{' '}
+        <button
+          type="button"
+          onClick={() => void window.api.checkForUpdates()}
+          className="rounded text-indigo-300 underline-offset-2 hover:underline"
+        >
+          Verificar atualizações
+        </button>
+      </p>
     </div>
   )
 }

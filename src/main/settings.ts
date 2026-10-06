@@ -138,7 +138,8 @@ export function getPublicSettings(): PublicSettings {
     providers: resolveAll(read()).map(({ apiKey: _apiKey, ...state }) => state),
     shortcuts: getShortcuts(),
     preferences: getPreferences(),
-    geminiKey: getGeminiKey() !== null
+    geminiKey: getGeminiKey() !== null,
+    version: app.getVersion()
   }
 }
 

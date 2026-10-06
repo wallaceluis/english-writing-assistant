@@ -8,6 +8,11 @@ files:
   - resources/tray.png
   - resources/icon.png
   - package.json
+# Where the installed app looks for new versions (see "Publicando uma versão" in the README).
+publish:
+  provider: github
+  owner: wallaceluis
+  repo: english-writing-assistant
 win:
   icon: resources/icon.png
   target:

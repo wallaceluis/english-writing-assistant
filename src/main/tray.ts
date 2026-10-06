@@ -9,6 +9,7 @@ type TrayActions = {
   onPortuguese: () => void
   onOpen: () => void
   onSettings: () => void
+  onCheckForUpdates: () => void
 }
 
 // Kept at module scope so the tray icon is not garbage collected.
@@ -47,6 +48,7 @@ export function refreshTray(): void {
         checked: app.getLoginItemSettings().openAtLogin,
         click: (item) => app.setLoginItemSettings({ openAtLogin: item.checked })
       },
+      { label: `Verificar atualizações (versão ${app.getVersion()})`, click: actions.onCheckForUpdates },
       { type: 'separator' },
       { label: 'Sair', click: () => app.quit() }
     ])

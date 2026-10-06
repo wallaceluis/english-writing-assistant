@@ -17,6 +17,7 @@ import { getPublicSettings, moveProvider, removeProvider, savePreferences, saveP
 import { changeShortcut, suspendShortcuts } from './shortcut'
 import { refreshTray } from './tray'
 import { synthesize } from './tts'
+import { checkForUpdates } from './updater'
 import { hideWindow, markRendererReady, setAutoHide } from './window'
 
 const text = (value: unknown): string | undefined => (typeof value === 'string' ? value.trim() : undefined)
@@ -45,6 +46,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.synthesize, (_event, value: unknown): SpeechResult | Promise<SpeechResult> =>
     typeof value === 'string' && value ? synthesize(value) : { ok: false, message: 'Texto inválido.' }
   )
+  ipcMain.handle(IPC.checkForUpdates, () => checkForUpdates(true))
   ipcMain.handle(IPC.getHistory, listHistory)
   ipcMain.handle(IPC.clearHistory, clearHistory)
   ipcMain.handle(IPC.savePreferences, (_event, patch: unknown) => {

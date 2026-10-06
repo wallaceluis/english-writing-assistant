@@ -59,7 +59,7 @@ export function SettingsView({ onClose }: { onClose: () => void }) {
       {tab === 'shortcuts' && settings ? (
         <ShortcutsPanel shortcuts={settings.shortcuts} onChanged={() => void load()} />
       ) : tab === 'preferences' && settings ? (
-        <PreferencesPanel preferences={settings.preferences} geminiKey={settings.geminiKey} onChanged={() => void load()} />
+        <PreferencesPanel preferences={settings.preferences} geminiKey={settings.geminiKey} version={settings.version} onChanged={() => void load()} />
       ) : (
         <div className="scroll-thin flex-1 overflow-y-auto px-3 py-3">
           <p className="px-2 pb-2 text-[12px] leading-5 text-zinc-400">

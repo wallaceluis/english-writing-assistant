@@ -21,6 +21,7 @@ export const IPC = {
   getHistory: 'history:get',
   clearHistory: 'history:clear',
   synthesize: 'speech:synthesize',
+  checkForUpdates: 'app:check-for-updates',
   suspendShortcuts: 'shortcuts:suspend'
 } as const
 
@@ -111,6 +112,7 @@ export type PublicSettings = {
   preferences: Preferences
   /** Whether a Gemini key exists, which the natural voice needs. */
   geminiKey: boolean
+  version: string
 }
 
 export type ProviderPatch = {
@@ -139,6 +141,8 @@ export interface AssistApi {
   explain(source: string, result: string): Promise<ExplainResult>
   /** Natural-voice audio for a text, from Gemini. */
   synthesize(text: string): Promise<SpeechResult>
+  /** The outcome is reported through a tray notification. */
+  checkForUpdates(): Promise<void>
   getHistory(): Promise<HistoryEntry[]>
   clearHistory(): Promise<void>
   getSettings(): Promise<PublicSettings>
