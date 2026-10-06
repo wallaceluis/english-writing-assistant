@@ -1,5 +1,6 @@
 // Contract shared by the main process, the preload bridge and the renderer.
 import type { ProviderId } from './providers'
+import type { ShortcutAction, Shortcuts } from './shortcuts'
 
 export const IPC = {
   ready: 'app:ready',
@@ -12,7 +13,9 @@ export const IPC = {
   getSettings: 'settings:get',
   saveProvider: 'settings:save-provider',
   removeProvider: 'settings:remove-provider',
-  moveProvider: 'settings:move-provider'
+  moveProvider: 'settings:move-provider',
+  saveShortcut: 'settings:save-shortcut',
+  suspendShortcuts: 'shortcuts:suspend'
 } as const
 
 export type View = 'main' | 'settings'
@@ -24,7 +27,8 @@ export type ErrorCode = 'missing-key' | 'invalid-key' | 'model' | 'quota' | 'rat
 
 // A session is one press of the global shortcut. `source` is empty when the clipboard has no text.
 export type SessionEvent =
-  | { type: 'start'; id: number; source: string }
+  /** With `speak`, the result is read aloud as soon as it is done. */
+  | { type: 'start'; id: number; source: string; speak: boolean }
   /** A provider is about to answer. With `fallback`, the previous one failed and its partial text is discarded. */
   | { type: 'provider'; id: number; name: string; model: string; fallback: boolean }
   | { type: 'mode'; id: number; mode: Mode }
@@ -46,6 +50,7 @@ export type ProviderState = {
 export type PublicSettings = {
   /** Active providers first, in fallback order. */
   providers: ProviderState[]
+  shortcuts: Shortcuts
 }
 
 export type ProviderPatch = {
@@ -75,6 +80,10 @@ export interface AssistApi {
   removeProvider(id: ProviderId): Promise<void>
   /** Moves an active provider up (-1) or down (1) the fallback chain. */
   moveProvider(id: ProviderId, direction: -1 | 1): Promise<void>
+  /** Fails when the accelerator is invalid or taken by another program. */
+  saveShortcut(action: ShortcutAction, accelerator: string): Promise<SaveResult>
+  /** Turns the global shortcuts off while the settings screen records a new one. */
+  suspendShortcuts(suspended: boolean): Promise<void>
   /** Listeners return their unsubscribe function. */
   onSessionEvent(listener: (event: SessionEvent) => void): () => void
   onNavigate(listener: (view: View) => void): () => void

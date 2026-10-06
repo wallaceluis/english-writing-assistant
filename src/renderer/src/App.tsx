@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { View } from '../../shared/ipc'
+import { DEFAULT_SHORTCUTS, formatAccelerator } from '../../shared/shortcuts'
 import { IconButton } from './components/Button'
 import { EmptyState } from './components/EmptyState'
 import { Footer } from './components/Footer'
@@ -22,6 +23,13 @@ export default function App() {
   const [copied, setCopied] = useState(false)
   const hideTimer = useRef<number>()
   const speech = useSpeech()
+  const [assistShortcut, setAssistShortcut] = useState(DEFAULT_SHORTCUTS.assist)
+  const spokenFor = useRef<number>()
+
+  // Reloaded whenever the settings screen closes, where the shortcut can change.
+  useEffect(() => {
+    if (view === 'main') void window.api.getSettings().then((settings) => setAssistShortcut(settings.shortcuts.assist))
+  }, [view])
 
   useEffect(() => window.api.onNavigate(setView), [])
 
@@ -32,6 +40,14 @@ export default function App() {
     speech.stop()
     if (session) setView('main')
   }, [session?.id, speech.stop])
+
+  // The "translate and listen" shortcut: speak once, as soon as the text is complete.
+  // Declared after the effect above, which silences the previous session.
+  useEffect(() => {
+    if (!session?.speak || session.status !== 'done' || !speech.available || spokenFor.current === session.id) return
+    spokenFor.current = session.id
+    speech.speak(session.result)
+  }, [session, speech.available, speech.speak])
 
   const result = session?.status === 'done' ? session.result : ''
   const canCopy = view === 'main' && result !== ''
@@ -116,7 +132,7 @@ export default function App() {
             />
           </>
         ) : (
-          <EmptyState clipboardEmpty={session !== null} />
+          <EmptyState clipboardEmpty={session !== null} shortcut={formatAccelerator(assistShortcut)} />
         )}
       </main>
     </div>

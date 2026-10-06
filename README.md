@@ -19,6 +19,7 @@ Não precisa de `Ctrl+C`: o app copia a seleção por você e depois devolve o q
 | Atalho       | Ação                                                   |
 | ------------ | ------------------------------------------------------ |
 | `Ctrl+Alt+E` | Global: lê o texto selecionado e abre a janela          |
+| `Ctrl+Alt+L` | Global: faz o mesmo e lê o resultado em voz alta       |
 | `Enter`      | Copia o resultado e fecha a janela                     |
 | `Ctrl+R`     | Refaz o texto (gera outra versão)                      |
 | `Ctrl+L`     | Ouve o resultado em inglês (ou para a leitura)         |
@@ -26,7 +27,9 @@ Não precisa de `Ctrl+C`: o app copia a seleção por você e depois devolve o q
 
 Clicar fora da janela também a minimiza, e o botão na barra de tarefas a reabre. O ícone na bandeja tem um menu com **Melhorar texto copiado**, **Abrir janela**, **Configurações…**, **Iniciar com o Windows** e **Sair**.
 
-O botão **Ouvir** lê o resultado em voz alta com as vozes em inglês instaladas no Windows: é gratuito, funciona offline e não usa nenhuma API. Ele só aparece quando existe uma voz em inglês no sistema (*Configurações → Hora e idioma → Fala*).
+Os dois atalhos globais podem ser trocados em **Configurações → Atalhos**: clique no atalho e pressione a nova combinação (com `Ctrl` ou `Alt`). Se a combinação já pertencer a outro programa, o app avisa e mantém a anterior.
+
+O botão **Ouvir** e o atalho `Ctrl+Alt+L` leem o resultado em voz alta com as vozes em inglês instaladas no Windows: é gratuito, funciona offline e não usa nenhuma API. Ele só aparece quando existe uma voz em inglês no sistema (*Configurações → Hora e idioma → Fala*).
 
 ## Requisitos
 
@@ -140,7 +143,7 @@ src/
 │   ├── window.ts         Janela flutuante sem bordas (mostrar, minimizar, posicionar)
 │   ├── selection.ts      Captura do texto selecionado em outros programas
 │   ├── tray.ts           Ícone e menu da bandeja
-│   ├── shortcut.ts       Registro do atalho global
+│   ├── shortcut.ts       Registro e troca dos atalhos globais
 │   ├── assistant.ts      Sessão: lê o clipboard, percorre os provedores, emite eventos
 │   ├── openai.ts         Cliente, prompt, streaming e tradução dos erros da API
 │   ├── settings.ts       Provedores, chaves criptografadas e ordem de fallback
@@ -153,7 +156,8 @@ src/
 │       └── components/
 └── shared/
     ├── ipc.ts            Canais e tipos compartilhados entre os três processos
-    └── providers.ts      Catálogo de provedores (URL base, modelo padrão, limites)
+    ├── providers.ts      Catálogo de provedores (URL base, modelo padrão, limites)
+    └── shortcuts.ts      Ações com atalho global e seus padrões
 ```
 
 O fluxo de um atalho:
@@ -177,8 +181,8 @@ O texto copiado é enviado à API do provedor ativo (e do seguinte, se houver fa
 
 | Sintoma                                           | O que fazer                                                                                                                                                 |
 | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Aviso "Atalho indisponível" ao abrir              | Outro programa já usa `Ctrl+Alt+E`. Feche-o ou troque a constante `SHORTCUT` em `src/main/shortcut.ts`.                                                     |
-| `AltGr+E` parou de digitar `°`                    | No Windows, `AltGr` equivale a `Ctrl+Alt`, então o atalho captura essa combinação enquanto o app está aberto. Troque o atalho em `src/main/shortcut.ts`.    |
+| Aviso "Atalho indisponível" ao abrir | Outro programa já usa a combinação. Troque em **Configurações → Atalhos**. |
+| `AltGr+E` parou de digitar `°`                    | No Windows, `AltGr` equivale a `Ctrl+Alt`, então o atalho captura essa combinação enquanto o app está aberto. Troque o atalho em **Configurações → Atalhos**.    |
 | "… recusou a chave de API" | A chave está errada ou foi revogada. Gere outra e salve em **Configurações**. |
 | "… está sem créditos ou sem cota" | A cota gratuita do dia acabou ou a conta paga está sem saldo. Ative outro provedor como fallback. |
 | "… atingiu o limite de requisições" | Limite por minuto do plano gratuito. Espere alguns segundos ou ative um segundo provedor. |

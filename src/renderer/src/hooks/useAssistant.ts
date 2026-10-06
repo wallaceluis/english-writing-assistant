@@ -4,6 +4,8 @@ import type { ErrorCode, Mode, SessionEvent } from '../../../shared/ipc'
 export type Session = {
   id: number
   source: string
+  /** Started by the "translate and listen" shortcut. */
+  speak: boolean
   result: string
   mode: Mode | null
   /** Who is answering; `fallback` when an earlier provider failed. */
@@ -14,7 +16,7 @@ export type Session = {
 
 function reducer(state: Session | null, event: SessionEvent): Session | null {
   if (event.type === 'start') {
-    return { id: event.id, source: event.source, result: '', mode: null, provider: null, status: 'loading', error: null }
+    return { id: event.id, source: event.source, speak: event.speak, result: '', mode: null, provider: null, status: 'loading', error: null }
   }
   // Late events from a session that has already been replaced.
   if (!state || state.id !== event.id) return state

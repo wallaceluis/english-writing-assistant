@@ -3,6 +3,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { ProviderPatch, ProviderState, PublicSettings, SaveResult } from '../shared/ipc'
 import { getPreset, isProviderId, PROVIDERS, type ProviderId } from '../shared/providers'
+import { DEFAULT_SHORTCUTS, type ShortcutAction, type Shortcuts } from '../shared/shortcuts'
 
 type StoredProvider = {
   /** Base64 of the key encrypted with safeStorage (DPAPI on Windows). */
@@ -17,6 +18,8 @@ type StoredSettings = {
   providers?: Partial<Record<ProviderId, StoredProvider>>
   /** Fallback order. */
   order?: ProviderId[]
+  /** Only the shortcuts changed by the user. */
+  shortcuts?: Partial<Shortcuts>
 }
 
 export type ResolvedProvider = {
@@ -90,8 +93,20 @@ export function getActiveProviders(): ResolvedProvider[] {
     .map(({ id, apiKey, baseURL, model }) => ({ id, name: getPreset(id).name, apiKey, baseURL, model }))
 }
 
+export function getShortcuts(): Shortcuts {
+  return { ...DEFAULT_SHORTCUTS, ...read().shortcuts }
+}
+
+export function saveShortcut(action: ShortcutAction, accelerator: string): void {
+  const settings = read()
+  write({ ...settings, shortcuts: { ...settings.shortcuts, [action]: accelerator } })
+}
+
 export function getPublicSettings(): PublicSettings {
-  return { providers: resolveAll(read()).map(({ apiKey: _apiKey, ...state }) => state) }
+  return {
+    providers: resolveAll(read()).map(({ apiKey: _apiKey, ...state }) => state),
+    shortcuts: getShortcuts()
+  }
 }
 
 // Keys must not travel in clear text, except to a server on this machine.

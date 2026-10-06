@@ -17,6 +17,8 @@ const api: AssistApi = {
   saveProvider: (patch) => ipcRenderer.invoke(IPC.saveProvider, patch),
   removeProvider: (id) => ipcRenderer.invoke(IPC.removeProvider, id),
   moveProvider: (id, direction) => ipcRenderer.invoke(IPC.moveProvider, id, direction),
+  saveShortcut: (action, accelerator) => ipcRenderer.invoke(IPC.saveShortcut, action, accelerator),
+  suspendShortcuts: (suspended) => ipcRenderer.invoke(IPC.suspendShortcuts, suspended),
   onSessionEvent: (listener) => subscribe(IPC.sessionEvent, listener),
   onNavigate: (listener) => subscribe(IPC.navigate, listener)
 }

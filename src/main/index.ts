@@ -1,9 +1,10 @@
 import { app, Menu } from 'electron'
+import { formatAccelerator } from '../shared/shortcuts'
 import { startSession, startSessionFromClipboard } from './assistant'
 import { registerIpcHandlers } from './ipc'
 import { startSelectionHelper } from './selection'
-import { getActiveProviders } from './settings'
-import { registerShortcut, SHORTCUT_LABEL } from './shortcut'
+import { getActiveProviders, getShortcuts } from './settings'
+import { initShortcuts } from './shortcut'
 import { createTray, notify } from './tray'
 import { createFloatingWindow, openView, showWindow } from './window'
 
@@ -32,15 +33,19 @@ if (!app.requestSingleInstanceLock()) {
     createFloatingWindow()
     createTray({
       onAssist: () => void startSessionFromClipboard(),
+      onListen: () => void startSessionFromClipboard({ speak: true }),
       onOpen: showWindow,
       onSettings: () => void openView('settings')
     })
 
-    if (!registerShortcut(() => void startSession())) {
-      notify(
-        'Atalho indisponível',
-        `${SHORTCUT_LABEL} já está em uso por outro aplicativo. Use o menu do ícone na bandeja.`
-      )
+    const unavailable = initShortcuts({
+      assist: () => void startSession(),
+      listen: () => void startSession({ speak: true })
+    })
+    if (unavailable.length > 0) {
+      const shortcuts = getShortcuts()
+      const keys = unavailable.map((action) => formatAccelerator(shortcuts[action]).join('+')).join(' e ')
+      notify('Atalho indisponível', `${keys}: já em uso por outro aplicativo. Troque em Configurações → Atalhos.`)
     }
 
     // First run: nothing works without a provider, so start on the settings screen.

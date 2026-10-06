@@ -2,7 +2,13 @@ import { ClipboardIcon } from './icons'
 import { Kbd } from './Kbd'
 
 // `clipboardEmpty` is the shortcut pressed with no text selected or copied.
-export function EmptyState({ clipboardEmpty = false }: { clipboardEmpty?: boolean }) {
+type EmptyStateProps = {
+  clipboardEmpty?: boolean
+  /** Key names of the shortcut that starts a translation. */
+  shortcut: string[]
+}
+
+export function EmptyState({ clipboardEmpty = false, shortcut }: EmptyStateProps) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 px-10 text-center">
       <div className="grid h-14 w-14 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-indigo-300">
@@ -13,9 +19,9 @@ export function EmptyState({ clipboardEmpty = false }: { clipboardEmpty?: boolea
         <p className="flex items-center justify-center gap-1.5 text-[14px] font-medium text-zinc-100">
           Selecione um texto e pressione
           <span className="flex items-center gap-1">
-            <Kbd>Ctrl</Kbd>
-            <Kbd>Alt</Kbd>
-            <Kbd>E</Kbd>
+            {shortcut.map((key) => (
+              <Kbd key={key}>{key}</Kbd>
+            ))}
           </span>
         </p>
         <p className="text-[12.5px] leading-5 text-zinc-400">

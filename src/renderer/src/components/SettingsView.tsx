@@ -1,20 +1,29 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react'
-import type { ProviderState } from '../../../shared/ipc'
+import type { ProviderState, PublicSettings } from '../../../shared/ipc'
 import { getPreset, type ProviderId } from '../../../shared/providers'
 import { Button, IconButton } from './Button'
 import { ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, EyeIcon, EyeOffIcon } from './icons'
+import { ShortcutsPanel } from './ShortcutsPanel'
 
 const INPUT =
   'h-9 w-full select-text rounded-lg border border-white/10 bg-white/[0.04] px-3 font-mono text-[13px] text-zinc-100 placeholder:text-zinc-600 transition-colors hover:border-white/20 focus:border-indigo-400/60 focus:bg-white/[0.06] focus:outline-none focus:ring-2 focus:ring-indigo-400/25'
 
 const FOOTER = 'flex h-[52px] shrink-0 items-center justify-end gap-1.5 border-t border-white/[0.06] px-3'
 
+const TABS = [
+  { id: 'providers', label: 'Provedores' },
+  { id: 'shortcuts', label: 'Atalhos' }
+] as const
+
+type Tab = (typeof TABS)[number]['id']
+
 export function SettingsView({ onClose }: { onClose: () => void }) {
-  const [providers, setProviders] = useState<ProviderState[] | null>(null)
+  const [settings, setSettings] = useState<PublicSettings | null>(null)
+  const [tab, setTab] = useState<Tab>('providers')
   const [editing, setEditing] = useState<ProviderId | null>(null)
 
   const load = useCallback(async () => {
-    setProviders((await window.api.getSettings()).providers)
+    setSettings(await window.api.getSettings())
   }, [])
 
   useEffect(() => {
@@ -31,7 +40,8 @@ export function SettingsView({ onClose }: { onClose: () => void }) {
     await load()
   }
 
-  const current = providers?.find((state) => state.id === editing)
+  const providers = settings?.providers ?? []
+  const current = providers.find((state) => state.id === editing)
   if (current) {
     const backToList = async () => {
       await load()
@@ -40,30 +50,50 @@ export function SettingsView({ onClose }: { onClose: () => void }) {
     return <ProviderForm key={current.id} state={current} onBack={() => setEditing(null)} onChanged={backToList} />
   }
 
-  const activeCount = providers?.filter((state) => state.active).length ?? 0
+  const activeCount = providers.filter((state) => state.active).length
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="scroll-thin flex-1 overflow-y-auto px-3 py-3">
-        <p className="px-2 pb-2 text-[12px] leading-5 text-zinc-400">
-          O primeiro provedor ativo responde. Se ele falhar ou atingir o limite, o próximo assume automaticamente.
-        </p>
-        <ul className="space-y-0.5">
-          {providers?.map((state, index) => (
-            <ProviderRow
-              key={state.id}
-              state={state}
-              position={index + 1}
-              canMoveUp={state.active && index > 0}
-              canMoveDown={state.active && index < activeCount - 1}
-              showOrder={activeCount > 1}
-              onEdit={() => setEditing(state.id)}
-              onMove={(direction) => void move(state.id, direction)}
-            />
-          ))}
-        </ul>
-      </div>
+      {tab === 'shortcuts' && settings ? (
+        <ShortcutsPanel shortcuts={settings.shortcuts} onChanged={() => void load()} />
+      ) : (
+        <div className="scroll-thin flex-1 overflow-y-auto px-3 py-3">
+          <p className="px-2 pb-2 text-[12px] leading-5 text-zinc-400">
+            O primeiro provedor ativo responde. Se ele falhar ou atingir o limite, o próximo assume automaticamente.
+          </p>
+          <ul className="space-y-0.5">
+            {providers.map((state, index) => (
+              <ProviderRow
+                key={state.id}
+                state={state}
+                position={index + 1}
+                canMoveUp={state.active && index > 0}
+                canMoveDown={state.active && index < activeCount - 1}
+                showOrder={activeCount > 1}
+                onEdit={() => setEditing(state.id)}
+                onMove={(direction) => void move(state.id, direction)}
+              />
+            ))}
+          </ul>
+        </div>
+      )}
       <footer className={FOOTER}>
+        <div className="mr-auto flex gap-0.5 rounded-lg bg-white/[0.04] p-0.5" role="tablist">
+          {TABS.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={tab === id}
+              onClick={() => setTab(id)}
+              className={`h-7 rounded-md px-3 text-[12px] font-medium transition-colors ${
+                tab === id ? 'bg-white/10 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <Button onClick={onClose}>Voltar</Button>
       </footer>
     </div>

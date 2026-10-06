@@ -14,28 +14,33 @@ function emit(event: SessionEvent): void {
   void sendToRenderer(IPC.sessionEvent, event)
 }
 
-// Runs on every press of the global shortcut.
-export async function startSession(): Promise<void> {
-  await run(await readSelectionOrClipboard())
+type SessionOptions = {
+  /** Read the result aloud as soon as it is ready. */
+  speak?: boolean
+}
+
+// Runs on every press of a global shortcut.
+export async function startSession({ speak = false }: SessionOptions = {}): Promise<void> {
+  await run(await readSelectionOrClipboard(), speak)
 }
 
 // From the tray menu there is no focused selection to read.
-export function startSessionFromClipboard(): Promise<void> {
-  return run(clipboard.readText().trim())
+export function startSessionFromClipboard({ speak = false }: SessionOptions = {}): Promise<void> {
+  return run(clipboard.readText().trim(), speak)
 }
 
 export async function retrySession(): Promise<void> {
-  if (current) await run(current.source)
+  if (current) await run(current.source, false)
 }
 
-async function run(source: string): Promise<void> {
+async function run(source: string, speak: boolean): Promise<void> {
   current?.controller.abort()
   const controller = new AbortController()
   current = { source, controller }
   const id = ++lastId
 
   showWindow()
-  emit({ type: 'start', id, source })
+  emit({ type: 'start', id, source, speak })
   if (!source) return
 
   if (source.length > MAX_SOURCE_LENGTH) {
