@@ -24,7 +24,7 @@ export default function App() {
   const [settings, setSettings] = useState<PublicSettings | null>(null)
   const hideTimer = useRef<number>()
   const spokenFor = useRef<number>()
-  const speech = useSpeech()
+  const speech = useSpeech(settings?.preferences.voice ?? 'system')
 
   // Reloaded whenever the settings screen closes, where shortcuts and preferences can change.
   useEffect(() => {
@@ -49,7 +49,7 @@ export default function App() {
   useEffect(() => {
     if (!session?.speak || session.status !== 'done' || !canSpeak || spokenFor.current === session.id) return
     spokenFor.current = session.id
-    speech.speak(session.result, language)
+    void speech.speak(session.result, language)
   }, [session, canSpeak, language, speech.speak])
 
   const result = session?.status === 'done' ? session.result : ''
@@ -86,7 +86,7 @@ export default function App() {
 
   const toggleListen = useCallback(() => {
     if (speech.speaking) speech.stop()
-    else if (canCopy) speech.speak(result, language)
+    else if (canCopy) void speech.speak(result, language)
   }, [speech.speaking, speech.stop, speech.speak, canCopy, result, language])
 
   const closeSettings = useCallback(() => {
@@ -166,6 +166,7 @@ export default function App() {
               onRetry={canRetry ? () => rerun() : undefined}
               onListen={canSpeak ? toggleListen : undefined}
               listening={speech.speaking}
+              notice={speech.notice}
               onReplace={session.direction === 'to-english' ? replace : undefined}
             />
           </>

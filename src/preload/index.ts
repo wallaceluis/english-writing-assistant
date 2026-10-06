@@ -15,6 +15,7 @@ const api: AssistApi = {
   run: (request) => ipcRenderer.invoke(IPC.run, request),
   replace: (text) => ipcRenderer.invoke(IPC.replace, text),
   explain: (source, result) => ipcRenderer.invoke(IPC.explain, source, result),
+  synthesize: (text) => ipcRenderer.invoke(IPC.synthesize, text),
   getHistory: () => ipcRenderer.invoke(IPC.getHistory),
   clearHistory: () => ipcRenderer.invoke(IPC.clearHistory),
   getSettings: () => ipcRenderer.invoke(IPC.getSettings),

@@ -12,22 +12,30 @@ type FooterProps = {
   /** Absent when there is no voice for the result's language. */
   onListen?: () => void
   listening: boolean
+  /** A problem worth a line, such as the natural voice falling back to the Windows one. */
+  notice?: string | null
   /** Types the result over the selection of the application behind the window. */
   onReplace?: () => void
 }
 
-export function Footer({ provider, canCopy, copied, onCopy, onRetry, onListen, listening, onReplace }: FooterProps) {
+export function Footer({ provider, canCopy, copied, onCopy, onRetry, onListen, listening, notice, onReplace }: FooterProps) {
   return (
     <footer className="flex h-[52px] shrink-0 items-center justify-between gap-3 border-t border-white/[0.06] pl-5 pr-3">
       <div className="flex min-w-0 items-center gap-3 text-[11.5px] text-zinc-500">
         <span className="flex shrink-0 items-center gap-1.5">
           <Kbd>Enter</Kbd> copiar
         </span>
-        {provider && (
-          <span className="truncate" title={provider.model}>
-            {provider.fallback && <span className="text-amber-300/80">fallback · </span>}
-            via {provider.name}
+        {notice ? (
+          <span className="truncate text-amber-300/80" title={notice}>
+            {notice}
           </span>
+        ) : (
+          provider && (
+            <span className="truncate" title={provider.model}>
+              {provider.fallback && <span className="text-amber-300/80">fallback · </span>}
+              via {provider.name}
+            </span>
+          )
         )}
       </div>
 

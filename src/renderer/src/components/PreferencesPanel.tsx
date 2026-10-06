@@ -1,13 +1,20 @@
 import { useState, type ReactNode } from 'react'
-import { MAX_GLOSSARY_LENGTH, type Preferences } from '../../../shared/ipc'
+import { MAX_GLOSSARY_LENGTH, type Preferences, type VoiceEngine } from '../../../shared/ipc'
 import { ToneSelector } from './ToneSelector'
+
+const VOICES: ReadonlyArray<{ id: VoiceEngine; label: string }> = [
+  { id: 'system', label: 'Windows' },
+  { id: 'gemini', label: 'Gemini' }
+]
 
 type PreferencesPanelProps = {
   preferences: Preferences
+  /** The natural voice needs the key of the Gemini provider. */
+  geminiKey: boolean
   onChanged: () => void
 }
 
-export function PreferencesPanel({ preferences, onChanged }: PreferencesPanelProps) {
+export function PreferencesPanel({ preferences, geminiKey, onChanged }: PreferencesPanelProps) {
   const [glossary, setGlossary] = useState(preferences.glossary)
 
   const save = async (patch: Partial<Preferences>) => {
@@ -19,6 +26,33 @@ export function PreferencesPanel({ preferences, onChanged }: PreferencesPanelPro
     <div className="scroll-thin flex-1 space-y-4 overflow-y-auto px-5 py-4">
       <Row label="Tom padrão" description="Usado pelos atalhos. Dá para trocar em cada resultado.">
         <ToneSelector value={preferences.tone} onChange={(tone) => void save({ tone })} size="medium" />
+      </Row>
+
+      <Row
+        label="Voz"
+        description={
+          geminiKey
+            ? 'A do Windows é grátis e offline. A do Gemini é natural, mas envia o texto ao Google.'
+            : 'Para a voz natural do Gemini, ative o Google Gemini em Provedores.'
+        }
+      >
+        <div className="flex shrink-0 gap-0.5 rounded-lg bg-white/[0.04] p-0.5" role="radiogroup" aria-label="Voz">
+          {VOICES.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              role="radio"
+              aria-checked={preferences.voice === id}
+              disabled={id === 'gemini' && !geminiKey}
+              onClick={() => void save({ voice: id })}
+              className={`h-7 rounded-md px-3 text-[12px] font-medium transition-colors disabled:pointer-events-none disabled:opacity-40 ${
+                preferences.voice === id ? 'bg-white/10 text-zinc-100' : 'text-zinc-500 hover:text-zinc-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </Row>
 
       <Row label="Histórico" description="Guarda os 50 últimos resultados neste computador.">

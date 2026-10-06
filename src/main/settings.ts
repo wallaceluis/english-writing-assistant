@@ -31,7 +31,7 @@ type StoredSettings = {
   preferences?: Partial<Preferences>
 }
 
-const DEFAULT_PREFERENCES: Preferences = { tone: 'professional', glossary: '', history: true }
+const DEFAULT_PREFERENCES: Preferences = { tone: 'professional', glossary: '', history: true, voice: 'system' }
 
 export type ResolvedProvider = {
   id: ProviderId
@@ -125,14 +125,20 @@ export function savePreferences(patch: Partial<Record<keyof Preferences, unknown
   if (tone) next.tone = tone.id
   if (typeof patch.glossary === 'string') next.glossary = patch.glossary.slice(0, MAX_GLOSSARY_LENGTH)
   if (typeof patch.history === 'boolean') next.history = patch.history
+  if (patch.voice === 'system' || patch.voice === 'gemini') next.voice = patch.voice
   write({ ...settings, preferences: next })
+}
+
+export function getGeminiKey(): string | null {
+  return resolve('gemini', read()).apiKey
 }
 
 export function getPublicSettings(): PublicSettings {
   return {
     providers: resolveAll(read()).map(({ apiKey: _apiKey, ...state }) => state),
     shortcuts: getShortcuts(),
-    preferences: getPreferences()
+    preferences: getPreferences(),
+    geminiKey: getGeminiKey() !== null
   }
 }
 

@@ -20,6 +20,7 @@ export const IPC = {
   explain: 'session:explain',
   getHistory: 'history:get',
   clearHistory: 'history:clear',
+  synthesize: 'speech:synthesize',
   suspendShortcuts: 'shortcuts:suspend'
 } as const
 
@@ -63,6 +64,12 @@ export type SessionEvent =
   | { type: 'done'; id: number; text: string }
   | { type: 'error'; id: number; code: ErrorCode; message: string }
 
+/** `system` is the voices installed in Windows; `gemini` asks Google for a natural voice. */
+export type VoiceEngine = 'system' | 'gemini'
+
+/** `data` is base64: a WAV file, or raw 16-bit 24 kHz mono samples. */
+export type SpeechResult = { ok: true; data: string; mimeType: string } | { ok: false; message: string }
+
 export type ExplainResult = { ok: true; text: string } | { ok: false; message: string }
 
 /** A finished result, kept on this computer only. */
@@ -94,6 +101,7 @@ export type Preferences = {
   glossary: string
   /** Keep the latest results in a local file. */
   history: boolean
+  voice: VoiceEngine
 }
 
 export type PublicSettings = {
@@ -101,6 +109,8 @@ export type PublicSettings = {
   providers: ProviderState[]
   shortcuts: Shortcuts
   preferences: Preferences
+  /** Whether a Gemini key exists, which the natural voice needs. */
+  geminiKey: boolean
 }
 
 export type ProviderPatch = {
@@ -127,6 +137,8 @@ export interface AssistApi {
   replace(text: string): Promise<void>
   /** Explains in Portuguese what changed between an English text and its corrected version. */
   explain(source: string, result: string): Promise<ExplainResult>
+  /** Natural-voice audio for a text, from Gemini. */
+  synthesize(text: string): Promise<SpeechResult>
   getHistory(): Promise<HistoryEntry[]>
   clearHistory(): Promise<void>
   getSettings(): Promise<PublicSettings>

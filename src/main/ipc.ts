@@ -6,7 +6,8 @@ import {
   type ExplainResult,
   type ProviderPatch,
   type RunRequest,
-  type SaveResult
+  type SaveResult,
+  type SpeechResult
 } from '../shared/ipc'
 import { isProviderId } from '../shared/providers'
 import { isShortcutAction } from '../shared/shortcuts'
@@ -15,6 +16,7 @@ import { clearHistory, listHistory } from './history'
 import { getPublicSettings, moveProvider, removeProvider, savePreferences, saveProvider } from './settings'
 import { changeShortcut, suspendShortcuts } from './shortcut'
 import { refreshTray } from './tray'
+import { synthesize } from './tts'
 import { hideWindow, markRendererReady, setAutoHide } from './window'
 
 const text = (value: unknown): string | undefined => (typeof value === 'string' ? value.trim() : undefined)
@@ -40,6 +42,9 @@ export function registerIpcHandlers(): void {
     const valid = (value: unknown): value is string => typeof value === 'string' && value.length <= MAX_SOURCE_LENGTH * 2
     return valid(source) && valid(result) ? explainCorrection(source, result) : { ok: false, message: 'Texto inválido.' }
   })
+  ipcMain.handle(IPC.synthesize, (_event, value: unknown): SpeechResult | Promise<SpeechResult> =>
+    typeof value === 'string' && value ? synthesize(value) : { ok: false, message: 'Texto inválido.' }
+  )
   ipcMain.handle(IPC.getHistory, listHistory)
   ipcMain.handle(IPC.clearHistory, clearHistory)
   ipcMain.handle(IPC.savePreferences, (_event, patch: unknown) => {
