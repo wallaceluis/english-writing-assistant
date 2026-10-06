@@ -5,6 +5,7 @@ const WINDOW_WIDTH = 624
 const WINDOW_HEIGHT = 468
 
 let win: BrowserWindow | null = null
+let quitting = false
 
 export function createFloatingWindow(): BrowserWindow {
   win = new BrowserWindow({
@@ -30,7 +31,24 @@ export function createFloatingWindow(): BrowserWindow {
     }
   })
 
-  win.once('ready-to-show', showWindow)
+  // The app lives in the tray: closing or clicking away only hides the window.
+  app.on('before-quit', () => {
+    quitting = true
+  })
+  win.on('close', (event) => {
+    if (quitting) return
+    event.preventDefault()
+    hideWindow()
+  })
+  win.on('blur', () => {
+    if (!win?.webContents.isDevToolsOpened()) hideWindow()
+  })
+
+  if (!app.isPackaged) {
+    win.webContents.on('before-input-event', (_event, input) => {
+      if (input.type === 'keyDown' && input.key === 'F12') win?.webContents.toggleDevTools()
+    })
+  }
 
   if (!app.isPackaged && process.env.ELECTRON_RENDERER_URL) {
     void win.loadURL(process.env.ELECTRON_RENDERER_URL)
@@ -51,4 +69,13 @@ export function showWindow(): void {
   )
   win.show()
   win.focus()
+}
+
+export function hideWindow(): void {
+  win?.hide()
+}
+
+export function toggleWindow(): void {
+  if (win?.isVisible()) hideWindow()
+  else showWindow()
 }
