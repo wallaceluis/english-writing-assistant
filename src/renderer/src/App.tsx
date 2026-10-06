@@ -1,22 +1,70 @@
-import { useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { View } from '../../shared/ipc'
+import { IconButton } from './components/Button'
 import { EmptyState } from './components/EmptyState'
 import { Footer } from './components/Footer'
+import { SlidersIcon } from './components/icons'
 import { ResultView } from './components/ResultView'
-import { TitleBar } from './components/TitleBar'
-import { useAssistant } from './hooks/useAssistant'
+import { SettingsView } from './components/SettingsView'
+import { Badge, TitleBar } from './components/TitleBar'
+import { useAssistant, type Session } from './hooks/useAssistant'
+
+// Long enough to see the "Copiado" confirmation before the window goes away.
+const HIDE_AFTER_COPY_MS = 450
 
 const hide = (): void => void window.api.hide()
+const retry = (): void => void window.api.retry()
 
 export default function App() {
   const session = useAssistant()
+  const [view, setView] = useState<View>('main')
+  const [copied, setCopied] = useState(false)
+  const hideTimer = useRef<number>()
+
+  useEffect(() => window.api.onNavigate(setView), [])
+
+  // A new session always takes over the window.
+  useEffect(() => {
+    window.clearTimeout(hideTimer.current)
+    setCopied(false)
+    if (session) setView('main')
+  }, [session?.id])
+
+  const result = session?.status === 'done' ? session.result : ''
+  const canCopy = view === 'main' && result !== ''
+  const canRetry =
+    view === 'main' &&
+    (session?.status === 'done' || (session?.status === 'error' && session.error?.code !== 'missing-key'))
+
+  const copy = useCallback(async () => {
+    if (!canCopy) return
+    await window.api.copy(result)
+    setCopied(true)
+    hideTimer.current = window.setTimeout(hide, HIDE_AFTER_COPY_MS)
+  }, [canCopy, result])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') hide()
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        if (view === 'settings') setView('main')
+        else hide()
+      } else if (event.key === 'Enter' && !(event.target instanceof HTMLButtonElement)) {
+        if (canCopy) void copy()
+      } else if (event.ctrlKey && event.key.toLowerCase() === 'r') {
+        event.preventDefault()
+        if (canRetry) retry()
+      }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [])
+  }, [view, canCopy, canRetry, copy])
+
+  const onSettingsSaved = () => {
+    setView('main')
+    // The failed request was most likely waiting on the key or model just saved.
+    if (session?.status === 'error') retry()
+  }
 
   return (
     // The padding leaves transparent room for the card's shadow inside the frameless window.
@@ -27,11 +75,23 @@ export default function App() {
         className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-surface shadow-float motion-safe:animate-pop-in"
       >
         <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(60%_100%_at_50%_0%,rgba(99,102,241,0.16),transparent)]" />
-        <TitleBar onClose={hide} />
-        {session?.source ? (
+        <TitleBar
+          badge={view === 'settings' ? <Badge>Configurações</Badge> : statusBadge(session)}
+          actions={
+            view === 'main' && (
+              <IconButton label="Configurações" onClick={() => setView('settings')}>
+                <SlidersIcon />
+              </IconButton>
+            )
+          }
+          onClose={hide}
+        />
+        {view === 'settings' ? (
+          <SettingsView onClose={() => setView('main')} onSaved={onSettingsSaved} />
+        ) : session?.source ? (
           <>
-            <ResultView source={session.source} result="" status="pending" />
-            <Footer canCopy={false} copied={false} onCopy={() => {}} />
+            <ResultView session={session} onOpenSettings={() => setView('settings')} onRetry={retry} />
+            <Footer canCopy={canCopy} copied={copied} onCopy={copy} onRetry={canRetry ? retry : undefined} />
           </>
         ) : (
           <EmptyState clipboardEmpty={session !== null} />
@@ -39,4 +99,13 @@ export default function App() {
       </main>
     </div>
   )
+}
+
+function statusBadge(session: Session | null) {
+  if (!session?.source) return null
+  if (session.status === 'loading' || session.status === 'streaming') return <Badge busy>Escrevendo</Badge>
+  if (session.status === 'done' && session.mode) {
+    return <Badge>{session.mode === 'translated' ? 'PT → EN' : 'EN revisado'}</Badge>
+  }
+  return null
 }

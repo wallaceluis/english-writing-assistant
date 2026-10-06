@@ -1,11 +1,13 @@
-import { app, BrowserWindow, screen } from 'electron'
+import { app, BrowserWindow, screen, shell } from 'electron'
 import { join } from 'node:path'
+import { IPC, type View } from '../shared/ipc'
 
 const WINDOW_WIDTH = 624
 const WINDOW_HEIGHT = 468
 
 let win: BrowserWindow | null = null
 let quitting = false
+let autoHide = true
 
 // Events sent before the renderer has subscribed would be lost, so they wait for its handshake.
 let resolveRendererReady: () => void
@@ -56,8 +58,15 @@ export function createFloatingWindow(): BrowserWindow {
     hideWindow()
   })
   win.on('blur', () => {
-    if (!win?.webContents.isDevToolsOpened()) hideWindow()
+    if (autoHide && !win?.webContents.isDevToolsOpened()) hideWindow()
   })
+
+  // Links open in the default browser; the window itself never leaves the app.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https://')) void shell.openExternal(url)
+    return { action: 'deny' }
+  })
+  win.webContents.on('will-navigate', (event) => event.preventDefault())
 
   if (!app.isPackaged) {
     win.webContents.on('before-input-event', (_event, input) => {
@@ -90,3 +99,11 @@ export function hideWindow(): void {
   win?.hide()
 }
 
+export function setAutoHide(enabled: boolean): void {
+  autoHide = enabled
+}
+
+export async function openView(view: View): Promise<void> {
+  await sendToRenderer(IPC.navigate, view)
+  showWindow()
+}

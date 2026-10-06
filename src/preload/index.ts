@@ -10,8 +10,14 @@ function subscribe<T>(channel: string, listener: (payload: T) => void): () => vo
 const api: AssistApi = {
   ready: () => ipcRenderer.send(IPC.ready),
   hide: () => ipcRenderer.invoke(IPC.hide),
+  setAutoHide: (enabled) => ipcRenderer.invoke(IPC.setAutoHide, enabled),
   copy: (text) => ipcRenderer.invoke(IPC.copy, text),
-  onSessionEvent: (listener) => subscribe(IPC.sessionEvent, listener)
+  retry: () => ipcRenderer.invoke(IPC.retry),
+  getSettings: () => ipcRenderer.invoke(IPC.getSettings),
+  saveSettings: (patch) => ipcRenderer.invoke(IPC.saveSettings, patch),
+  clearApiKey: () => ipcRenderer.invoke(IPC.clearApiKey),
+  onSessionEvent: (listener) => subscribe(IPC.sessionEvent, listener),
+  onNavigate: (listener) => subscribe(IPC.navigate, listener)
 }
 
 contextBridge.exposeInMainWorld('api', api)

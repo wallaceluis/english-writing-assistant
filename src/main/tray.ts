@@ -5,12 +5,13 @@ import { SHORTCUT_LABEL } from './shortcut'
 type TrayActions = {
   onAssist: () => void
   onOpen: () => void
+  onSettings: () => void
 }
 
 // Kept at module scope so the tray icon is not garbage collected.
 let tray: Tray | null = null
 
-export function createTray({ onAssist, onOpen }: TrayActions): Tray {
+export function createTray({ onAssist, onOpen, onSettings }: TrayActions): Tray {
   tray = new Tray(nativeImage.createFromPath(trayIcon))
   tray.setToolTip(`English Assist — ${SHORTCUT_LABEL}`)
   tray.on('click', onOpen)
@@ -18,6 +19,7 @@ export function createTray({ onAssist, onOpen }: TrayActions): Tray {
     Menu.buildFromTemplate([
       { label: 'Melhorar texto copiado', accelerator: SHORTCUT_LABEL, click: onAssist },
       { label: 'Abrir janela', click: onOpen },
+      { label: 'Configurações…', click: onSettings },
       { type: 'separator' },
       {
         label: 'Iniciar com o Windows',

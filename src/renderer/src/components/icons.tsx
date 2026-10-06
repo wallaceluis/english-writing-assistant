@@ -47,7 +47,43 @@ export const RefreshIcon = (props: IconProps) => (
   </Icon>
 )
 
-export const ClipboardIcon = (props: IconProps) => (
+export const SlidersIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 7h9M19 7h1M4 17h1M11 17h9" />
+    <circle cx="16" cy="7" r="2.5" />
+    <circle cx="8" cy="17" r="2.5" />
+  </Icon>
+)
+
+export const AlertIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 4.5L21 19.5H3z" />
+    <path d="M12 10.5v4M12 17v.2" />
+  </Icon>
+)
+
+export const KeyIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="8" cy="15.5" r="4" />
+    <path d="M11 12.5L19.5 4M16 7.5l2.5 2.5" />
+  </Icon>
+)
+
+export const EyeIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+    <circle cx="12" cy="12" r="2.8" />
+  </Icon>
+)
+
+export const EyeOffIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+    <path d="M4.5 4.5l15 15" />
+  </Icon>
+)
+
+export const ClipboardIcon =(props: IconProps) => (
   <Icon {...props}>
     <rect x="5.5" y="5" width="13" height="16" rx="2.5" />
     <path d="M9 5V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V5" />

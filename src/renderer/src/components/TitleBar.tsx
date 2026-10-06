@@ -25,9 +25,10 @@ export function TitleBar({ badge, actions, onClose }: TitleBarProps) {
   )
 }
 
-export function Badge({ children }: { children: ReactNode }) {
+export function Badge({ children, busy = false }: { children: ReactNode; busy?: boolean }) {
   return (
-    <span className="rounded-full border border-indigo-400/20 bg-indigo-400/10 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wider text-indigo-200">
+    <span className="flex items-center gap-1.5 rounded-full border border-indigo-400/20 bg-indigo-400/10 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wider text-indigo-200">
+      {busy && <span className="h-1.5 w-1.5 rounded-full bg-indigo-300 motion-safe:animate-pulse" />}
       {children}
     </span>
   )
