@@ -116,6 +116,11 @@ export function hideWindow(): void {
   win?.minimize()
 }
 
+// Feedback for work that happens without opening the window.
+export function setTaskbarBusy(busy: boolean): void {
+  if (win && !win.isDestroyed()) win.setProgressBar(busy ? 2 : -1, { mode: busy ? 'indeterminate' : 'none' })
+}
+
 export function setAutoHide(enabled: boolean): void {
   autoHide = enabled
 }

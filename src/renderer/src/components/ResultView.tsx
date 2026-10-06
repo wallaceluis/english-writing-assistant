@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import type { Tone } from '../../../shared/ipc'
 import type { Session } from '../hooks/useAssistant'
 import { Button } from './Button'
+import { Explanation } from './Explanation'
 import { AlertIcon, KeyIcon } from './icons'
 import { ToneSelector } from './ToneSelector'
 
@@ -44,6 +45,7 @@ export function ResultView({ session, onOpenSettings, onRetry, onTone }: ResultV
             )}
           </p>
         )}
+        {status === 'done' && session.mode === 'polished' && <Explanation source={source} result={result} />}
       </section>
     </div>
   )

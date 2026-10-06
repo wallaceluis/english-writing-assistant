@@ -21,6 +21,10 @@ export function PreferencesPanel({ preferences, onChanged }: PreferencesPanelPro
         <ToneSelector value={preferences.tone} onChange={(tone) => void save({ tone })} size="medium" />
       </Row>
 
+      <Row label="Histórico" description="Guarda os 50 últimos resultados neste computador.">
+        <Switch checked={preferences.history} onChange={(history) => void save({ history })} label="Guardar histórico" />
+      </Row>
+
       <div>
         <label htmlFor="glossary" className="text-[12.5px] font-medium text-zinc-200">
           Glossário
@@ -42,6 +46,29 @@ export function PreferencesPanel({ preferences, onChanged }: PreferencesPanelPro
         />
       </div>
     </div>
+  )
+}
+
+type SwitchProps = {
+  checked: boolean
+  onChange: (checked: boolean) => void
+  label: string
+}
+
+export function Switch({ checked, onChange, label }: SwitchProps) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={() => onChange(!checked)}
+      className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${checked ? 'bg-indigo-500' : 'bg-white/15'}`}
+    >
+      <span
+        className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-4' : ''}`}
+      />
+    </button>
   )
 }
 

@@ -16,10 +16,14 @@ export const IPC = {
   moveProvider: 'settings:move-provider',
   saveShortcut: 'settings:save-shortcut',
   savePreferences: 'settings:save-preferences',
+  replace: 'session:replace',
+  explain: 'session:explain',
+  getHistory: 'history:get',
+  clearHistory: 'history:clear',
   suspendShortcuts: 'shortcuts:suspend'
 } as const
 
-export type View = 'main' | 'settings'
+export type View = 'main' | 'settings' | 'history'
 
 /** `to-english` translates Portuguese or polishes English; `to-portuguese` is for reading what others wrote. */
 export type Direction = 'to-english' | 'to-portuguese'
@@ -59,6 +63,19 @@ export type SessionEvent =
   | { type: 'done'; id: number; text: string }
   | { type: 'error'; id: number; code: ErrorCode; message: string }
 
+export type ExplainResult = { ok: true; text: string } | { ok: false; message: string }
+
+/** A finished result, kept on this computer only. */
+export type HistoryEntry = RunRequest & {
+  id: number
+  /** ISO date. */
+  at: string
+  result: string
+  mode: Mode | null
+  /** Name of the provider that answered. */
+  provider: string
+}
+
 /** Never carries the key itself, only whether one exists and its last characters. */
 export type ProviderState = {
   id: ProviderId
@@ -75,6 +92,8 @@ export type Preferences = {
   tone: Tone
   /** One entry per line: a term to keep as is, or "term = translation". */
   glossary: string
+  /** Keep the latest results in a local file. */
+  history: boolean
 }
 
 export type PublicSettings = {
@@ -104,6 +123,12 @@ export interface AssistApi {
   copy(text: string): Promise<void>
   /** Starts a session for a text the renderer already has. */
   run(request: RunRequest): Promise<void>
+  /** Closes the window and types the text over the selection of the application behind it. */
+  replace(text: string): Promise<void>
+  /** Explains in Portuguese what changed between an English text and its corrected version. */
+  explain(source: string, result: string): Promise<ExplainResult>
+  getHistory(): Promise<HistoryEntry[]>
+  clearHistory(): Promise<void>
   getSettings(): Promise<PublicSettings>
   /** Saves and activates a provider. */
   saveProvider(patch: ProviderPatch): Promise<SaveResult>

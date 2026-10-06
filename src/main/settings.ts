@@ -31,7 +31,7 @@ type StoredSettings = {
   preferences?: Partial<Preferences>
 }
 
-const DEFAULT_PREFERENCES: Preferences = { tone: 'professional', glossary: '' }
+const DEFAULT_PREFERENCES: Preferences = { tone: 'professional', glossary: '', history: true }
 
 export type ResolvedProvider = {
   id: ProviderId
@@ -124,6 +124,7 @@ export function savePreferences(patch: Partial<Record<keyof Preferences, unknown
   const tone = TONES.find((candidate) => candidate.id === patch.tone)
   if (tone) next.tone = tone.id
   if (typeof patch.glossary === 'string') next.glossary = patch.glossary.slice(0, MAX_GLOSSARY_LENGTH)
+  if (typeof patch.history === 'boolean') next.history = patch.history
   write({ ...settings, preferences: next })
 }
 

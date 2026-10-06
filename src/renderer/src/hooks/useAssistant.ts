@@ -1,5 +1,5 @@
-import { useEffect, useReducer } from 'react'
-import type { Direction, ErrorCode, Mode, SessionEvent, Tone } from '../../../shared/ipc'
+import { useCallback, useEffect, useReducer } from 'react'
+import type { Direction, ErrorCode, HistoryEntry, Mode, SessionEvent, Tone } from '../../../shared/ipc'
 
 export type Session = {
   id: number
@@ -16,7 +16,15 @@ export type Session = {
   error: { code: ErrorCode; message: string } | null
 }
 
-function reducer(state: Session | null, event: SessionEvent): Session | null {
+// `restore` never comes from the main process: it reopens a finished result from the history.
+type Action = SessionEvent | { type: 'restore'; entry: HistoryEntry }
+
+function reducer(state: Session | null, event: Action): Session | null {
+  if (event.type === 'restore') {
+    const { id, at: _at, provider, ...entry } = event.entry
+    // Negative so it can never collide with an id handed out by the main process.
+    return { ...entry, id: -id, speak: false, provider: { name: provider, model: '', fallback: false }, status: 'done', error: null }
+  }
   if (event.type === 'start') {
     const { type: _type, ...request } = event
     return { ...request, result: '', mode: null, provider: null, status: 'loading', error: null }
@@ -45,8 +53,8 @@ function reducer(state: Session | null, event: SessionEvent): Session | null {
   }
 }
 
-// Mirrors the session driven by the main process; null until the shortcut is first used.
-export function useAssistant(): Session | null {
+// Mirrors the session driven by the main process; null until a shortcut is first used.
+export function useAssistant(): { session: Session | null; restore: (entry: HistoryEntry) => void } {
   const [session, dispatch] = useReducer(reducer, null)
 
   useEffect(() => {
@@ -55,5 +63,7 @@ export function useAssistant(): Session | null {
     return unsubscribe
   }, [])
 
-  return session
+  const restore = useCallback((entry: HistoryEntry) => dispatch({ type: 'restore', entry }), [])
+
+  return { session, restore }
 }

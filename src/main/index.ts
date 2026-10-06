@@ -1,6 +1,6 @@
 import { app, Menu } from 'electron'
 import { formatAccelerator } from '../shared/shortcuts'
-import { startSession, startSessionFromClipboard } from './assistant'
+import { replaceSelection, startSession, startSessionFromClipboard } from './assistant'
 import { registerIpcHandlers } from './ipc'
 import { startSelectionHelper } from './selection'
 import { getActiveProviders, getShortcuts } from './settings'
@@ -41,6 +41,7 @@ if (!app.requestSingleInstanceLock()) {
 
     const unavailable = initShortcuts({
       assist: () => void startSession({ direction: 'to-english' }),
+      replace: () => void replaceSelection(),
       listen: () => void startSession({ direction: 'to-english', speak: true }),
       portuguese: () => void startSession({ direction: 'to-portuguese' })
     })

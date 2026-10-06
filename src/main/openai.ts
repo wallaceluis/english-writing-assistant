@@ -20,7 +20,7 @@ type ImproveOptions = {
 }
 
 // Streams the rewritten text through `onDelta` and resolves with the full text.
-export async function improveText({ provider, request, glossary, signal, maxRetries, onMode, onDelta }: ImproveOptions): Promise<string> {
+export async function improveText({ provider, request, glossary, signal, maxRetries, onMode, onDelta }: ImproveOptions): Promise<string | null> {
   const client = new OpenAI({
     // The SDK insists on a key even for local servers that ignore it.
     apiKey: provider.apiKey ?? 'not-needed',
@@ -78,7 +78,36 @@ export async function improveText({ provider, request, glossary, signal, maxRetr
   // Stream ended while still buffering: anything that is not a bare header is the answer itself.
   if (!headerDone && !HEADER.test(header)) emit(header)
 
-  return output.trimEnd()
+  return output.trimEnd() || null
+}
+
+type CompleteOptions = {
+  provider: ResolvedProvider
+  system: string
+  user: string
+  signal: AbortSignal
+  maxRetries: number
+}
+
+// One-shot answer, for the requests whose text is not shown while it is being written.
+export async function completeText({ provider, system, user, signal, maxRetries }: CompleteOptions): Promise<string | null> {
+  const client = new OpenAI({
+    apiKey: provider.apiKey ?? 'not-needed',
+    baseURL: provider.baseURL,
+    maxRetries,
+    timeout: REQUEST_TIMEOUT_MS
+  })
+  const completion = await client.chat.completions.create(
+    {
+      model: provider.model,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user }
+      ]
+    },
+    { signal }
+  )
+  return completion.choices[0]?.message?.content?.trim() || null
 }
 
 export function describeError(error: unknown, { name, model }: ResolvedProvider): { code: ErrorCode; message: string } {

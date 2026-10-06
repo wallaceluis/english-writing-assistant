@@ -1,8 +1,17 @@
 import { clipboard, ipcMain } from 'electron'
-import { IPC, MAX_SOURCE_LENGTH, TONES, type ProviderPatch, type RunRequest, type SaveResult } from '../shared/ipc'
+import {
+  IPC,
+  MAX_SOURCE_LENGTH,
+  TONES,
+  type ExplainResult,
+  type ProviderPatch,
+  type RunRequest,
+  type SaveResult
+} from '../shared/ipc'
 import { isProviderId } from '../shared/providers'
 import { isShortcutAction } from '../shared/shortcuts'
-import { runRequest } from './assistant'
+import { explainCorrection, pasteIntoPreviousWindow, runRequest } from './assistant'
+import { clearHistory, listHistory } from './history'
 import { getPublicSettings, moveProvider, removeProvider, savePreferences, saveProvider } from './settings'
 import { changeShortcut, suspendShortcuts } from './shortcut'
 import { refreshTray } from './tray'
@@ -24,6 +33,15 @@ export function registerIpcHandlers(): void {
     const known = TONES.find((candidate) => candidate.id === tone)
     if (known) return runRequest({ source, direction, tone: known.id })
   })
+  ipcMain.handle(IPC.replace, (_event, value: unknown) => {
+    if (typeof value === 'string' && value) return pasteIntoPreviousWindow(value)
+  })
+  ipcMain.handle(IPC.explain, (_event, source: unknown, result: unknown): ExplainResult | Promise<ExplainResult> => {
+    const valid = (value: unknown): value is string => typeof value === 'string' && value.length <= MAX_SOURCE_LENGTH * 2
+    return valid(source) && valid(result) ? explainCorrection(source, result) : { ok: false, message: 'Texto inválido.' }
+  })
+  ipcMain.handle(IPC.getHistory, listHistory)
+  ipcMain.handle(IPC.clearHistory, clearHistory)
   ipcMain.handle(IPC.savePreferences, (_event, patch: unknown) => {
     if (patch && typeof patch === 'object') savePreferences(patch)
   })

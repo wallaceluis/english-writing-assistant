@@ -4,7 +4,8 @@ import { DEFAULT_SHORTCUTS, formatAccelerator } from '../../shared/shortcuts'
 import { IconButton } from './components/Button'
 import { EmptyState } from './components/EmptyState'
 import { Footer } from './components/Footer'
-import { SlidersIcon } from './components/icons'
+import { HistoryView } from './components/HistoryView'
+import { ClockIcon, SlidersIcon } from './components/icons'
 import { ResultView } from './components/ResultView'
 import { SettingsView } from './components/SettingsView'
 import { Badge, TitleBar } from './components/TitleBar'
@@ -17,7 +18,7 @@ const HIDE_AFTER_COPY_MS = 450
 const hide = (): void => void window.api.hide()
 
 export default function App() {
-  const session = useAssistant()
+  const { session, restore } = useAssistant()
   const [view, setView] = useState<View>('main')
   const [copied, setCopied] = useState(false)
   const [settings, setSettings] = useState<PublicSettings | null>(null)
@@ -77,6 +78,12 @@ export default function App() {
     }, HIDE_AFTER_COPY_MS)
   }, [canCopy, copied, result])
 
+  // Only English goes back into the application: a Portuguese result is for reading.
+  const canReplace = canCopy && session?.direction === 'to-english'
+  const replace = useCallback(() => {
+    if (canReplace) void window.api.replace(result)
+  }, [canReplace, result])
+
   const toggleListen = useCallback(() => {
     if (speech.speaking) speech.stop()
     else if (canCopy) speech.speak(result, language)
@@ -93,7 +100,11 @@ export default function App() {
       if (event.key === 'Escape') {
         event.preventDefault()
         if (view === 'settings') closeSettings()
+        else if (view === 'history') setView('main')
         else hide()
+      } else if (event.key === 'Enter' && event.ctrlKey) {
+        event.preventDefault()
+        replace()
       } else if (event.key === 'Enter' && !(event.target instanceof HTMLButtonElement)) {
         if (canCopy && !event.repeat) void copy()
       } else if (event.ctrlKey && event.key.toLowerCase() === 'r') {
@@ -106,7 +117,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [view, canCopy, canRetry, copy, rerun, closeSettings, toggleListen])
+  }, [view, canCopy, canRetry, copy, rerun, replace, closeSettings, toggleListen])
 
   return (
     // The padding leaves transparent room for the card's shadow inside the frameless window.
@@ -118,18 +129,27 @@ export default function App() {
       >
         <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(60%_100%_at_50%_0%,rgba(99,102,241,0.16),transparent)]" />
         <TitleBar
-          badge={view === 'settings' ? <Badge>Configurações</Badge> : statusBadge(session)}
+          badge={
+            view === 'settings' ? <Badge>Configurações</Badge> : view === 'history' ? <Badge>Histórico</Badge> : statusBadge(session)
+          }
           actions={
             view === 'main' && (
-              <IconButton label="Configurações" onClick={() => setView('settings')}>
-                <SlidersIcon />
-              </IconButton>
+              <>
+                <IconButton label="Histórico" onClick={() => setView('history')}>
+                  <ClockIcon />
+                </IconButton>
+                <IconButton label="Configurações" onClick={() => setView('settings')}>
+                  <SlidersIcon />
+                </IconButton>
+              </>
             )
           }
           onClose={hide}
         />
         {view === 'settings' ? (
           <SettingsView onClose={closeSettings} />
+        ) : view === 'history' ? (
+          <HistoryView enabled={settings?.preferences.history ?? true} onOpen={restore} onClose={() => setView('main')} />
         ) : session?.source ? (
           <>
             <ResultView
@@ -146,6 +166,7 @@ export default function App() {
               onRetry={canRetry ? () => rerun() : undefined}
               onListen={canSpeak ? toggleListen : undefined}
               listening={speech.speaking}
+              onReplace={session.direction === 'to-english' ? replace : undefined}
             />
           </>
         ) : (

@@ -114,6 +114,13 @@ export const StopIcon = (props: IconProps) => (
   </Icon>
 )
 
+export const ClockIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 7.5V12l3 2" />
+  </Icon>
+)
+
 export const ClipboardIcon = (props: IconProps) => (
   <Icon {...props}>
     <rect x="5.5" y="5" width="13" height="16" rx="2.5" />
