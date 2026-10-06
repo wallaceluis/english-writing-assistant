@@ -1,6 +1,7 @@
 import { app, Menu } from 'electron'
-import { startSession } from './assistant'
+import { startSession, startSessionFromClipboard } from './assistant'
 import { registerIpcHandlers } from './ipc'
+import { startSelectionHelper } from './selection'
 import { getActiveProviders } from './settings'
 import { registerShortcut, SHORTCUT_LABEL } from './shortcut'
 import { createTray, notify } from './tray'
@@ -27,9 +28,10 @@ if (!app.requestSingleInstanceLock()) {
   app.whenReady().then(() => {
     Menu.setApplicationMenu(null)
     registerIpcHandlers()
+    startSelectionHelper()
     createFloatingWindow()
     createTray({
-      onAssist: () => void startSession(),
+      onAssist: () => void startSessionFromClipboard(),
       onOpen: showWindow,
       onSettings: () => void openView('settings')
     })

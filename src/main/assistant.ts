@@ -1,6 +1,7 @@
 import { clipboard } from 'electron'
 import { IPC, type ErrorCode, type SessionEvent } from '../shared/ipc'
 import { describeError, improveText } from './openai'
+import { readSelectionOrClipboard } from './selection'
 import { getActiveProviders } from './settings'
 import { sendToRenderer, showWindow } from './window'
 
@@ -14,7 +15,12 @@ function emit(event: SessionEvent): void {
 }
 
 // Runs on every press of the global shortcut.
-export function startSession(): Promise<void> {
+export async function startSession(): Promise<void> {
+  await run(await readSelectionOrClipboard())
+}
+
+// From the tray menu there is no focused selection to read.
+export function startSessionFromClipboard(): Promise<void> {
   return run(clipboard.readText().trim())
 }
 

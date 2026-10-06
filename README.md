@@ -1,6 +1,6 @@
 # English Assist
 
-Assistente de escrita em inglês que vive na bandeja do Windows. Copie um texto, pressione `Ctrl+Alt+E` e receba a versão em inglês numa janela flutuante, pronta para colar.
+Assistente de escrita em inglês que vive na bandeja do Windows. Selecione um texto em qualquer programa, pressione `Ctrl+Alt+E` e receba a versão em inglês numa janela flutuante, pronta para colar.
 
 - **Texto em português** → traduzido para um inglês nativo e profissional.
 - **Texto em inglês** → gramática corrigida e reescrito para soar mais natural.
@@ -9,19 +9,21 @@ Assistente de escrita em inglês que vive na bandeja do Windows. Copie um texto,
 
 ## Como funciona no dia a dia
 
-1. Deixe o app rodando em segundo plano (ele fica só na bandeja do sistema, sem janela na barra de tarefas).
-2. Escreva seu e-mail, mensagem de Slack ou comentário de PR, selecione o texto e pressione `Ctrl+C`.
+1. Deixe o app rodando em segundo plano. Ele fica minimizado na barra de tarefas e com um ícone na bandeja do sistema.
+2. Escreva seu e-mail, mensagem de Slack ou comentário de PR e selecione o texto.
 3. Pressione `Ctrl+Alt+E`. A janela aparece e o texto em inglês vai sendo escrito em tempo real.
-4. Pressione `Enter` para copiar o resultado. A janela se fecha sozinha e você cola com `Ctrl+V`.
+4. Pressione `Enter` para copiar o resultado. A janela se fecha sozinha e você cola com `Ctrl+V` por cima da seleção.
+
+Não precisa de `Ctrl+C`: o app copia a seleção por você e depois devolve o que estava no seu clipboard (quando era texto). Se nada estiver selecionado, ele usa o texto que já está no clipboard.
 
 | Atalho       | Ação                                                   |
 | ------------ | ------------------------------------------------------ |
-| `Ctrl+Alt+E` | Global: lê o clipboard e abre a janela com o resultado |
+| `Ctrl+Alt+E` | Global: lê o texto selecionado e abre a janela          |
 | `Enter`      | Copia o resultado e fecha a janela                     |
 | `Ctrl+R`     | Refaz o texto (gera outra versão)                      |
 | `Esc`        | Fecha a janela                                         |
 
-Clicar fora da janela também a fecha. O ícone na bandeja tem um menu com **Melhorar texto copiado**, **Abrir janela**, **Configurações…**, **Iniciar com o Windows** e **Sair**.
+Clicar fora da janela também a minimiza, e o botão na barra de tarefas a reabre. O ícone na bandeja tem um menu com **Melhorar texto copiado**, **Abrir janela**, **Configurações…**, **Iniciar com o Windows** e **Sair**.
 
 ## Requisitos
 
@@ -132,7 +134,8 @@ O electron-builder baixa um pacote (`winCodeSign`) que contém links simbólicos
 src/
 ├── main/                 Processo principal do Electron
 │   ├── index.ts          Inicialização, instância única, primeira execução
-│   ├── window.ts         Janela flutuante sem bordas (mostrar, esconder, posicionar)
+│   ├── window.ts         Janela flutuante sem bordas (mostrar, minimizar, posicionar)
+│   ├── selection.ts      Captura do texto selecionado em outros programas
 │   ├── tray.ts           Ícone e menu da bandeja
 │   ├── shortcut.ts       Registro do atalho global
 │   ├── assistant.ts      Sessão: lê o clipboard, percorre os provedores, emite eventos
@@ -152,16 +155,20 @@ src/
 
 O fluxo de um atalho:
 
-1. O `globalShortcut` dispara no processo principal, que lê o texto do clipboard e mostra a janela.
+1. O `globalShortcut` dispara no processo principal, que copia a seleção do programa em foco, lê o texto e mostra a janela.
 2. O principal chama a API de Chat Completions do primeiro provedor ativo com `stream: true`; se falhar, tenta o seguinte.
 3. Cada pedaço da resposta vai para o renderer pelo canal `session:event` (`start`, `provider`, `mode`, `delta`, `done` ou `error`).
 4. O renderer só desenha o estado. Copiar, fechar e refazer voltam ao principal por `ipcRenderer.invoke`.
 
 O renderer roda com `contextIsolation`, `sandbox` e sem `nodeIntegration`; as chaves e todas as chamadas de rede ficam no processo principal.
 
+## Como a seleção é capturada
+
+O Windows não oferece uma forma direta de ler o texto selecionado em outro programa. Ao iniciar, o app sobe um processo auxiliar do PowerShell que fica aguardando; no atalho, ele espera você soltar as teclas, envia `Ctrl+C` para a janela em foco e confere se o clipboard mudou. Se mudou, o texto é lido e o conteúdo anterior do clipboard é restaurado. Gerenciadores de histórico do clipboard (como o `Win+V`) registram essa cópia.
+
 ## Privacidade
 
-O texto copiado é enviado à API do provedor ativo (e do seguinte, se houver fallback) somente quando você pressiona o atalho (ou usa **Melhorar texto copiado** / **Refazer**). O app não monitora o clipboard, não guarda histórico e não envia dados para nenhum outro serviço. Cada provedor tem sua própria política: no plano gratuito do Gemini, por exemplo, o Google pode usar os textos para melhorar seus produtos. Com o Ollama, nada sai do seu computador.
+O texto copiado é enviado à API do provedor ativo (e do seguinte, se houver fallback) somente quando você pressiona o atalho (ou usa **Melhorar texto copiado** / **Refazer**). O app só lê a seleção e o clipboard no momento do atalho, não guarda histórico e não envia dados para nenhum outro serviço. Cada provedor tem sua própria política: no plano gratuito do Gemini, por exemplo, o Google pode usar os textos para melhorar seus produtos. Com o Ollama, nada sai do seu computador.
 
 ## Problemas comuns
 
@@ -173,7 +180,8 @@ O texto copiado é enviado à API do provedor ativo (e do seguinte, se houver fa
 | "… está sem créditos ou sem cota" | A cota gratuita do dia acabou ou a conta paga está sem saldo. Ative outro provedor como fallback. |
 | "… atingiu o limite de requisições" | Limite por minuto do plano gratuito. Espere alguns segundos ou ative um segundo provedor. |
 | "O modelo … não existe ou não está disponível" | O ID do modelo mudou ou sua conta não tem acesso a ele. Troque em **Configurações**. |
-| "Não encontrei texto no clipboard"                | O clipboard está vazio ou tem uma imagem/arquivo. Copie o texto com `Ctrl+C` antes do atalho.                                                               |
+| "Não encontrei texto selecionado nem copiado" | Selecione o texto antes do atalho. Imagens e arquivos não contam como texto. |
+| O atalho ignora a seleção em um programa | Programas abertos como administrador não aceitam o `Ctrl+C` enviado pelo app. Copie com `Ctrl+C` e use o atalho em seguida. |
 | `npm install` falha ao instalar o Electron        | O projeto fixa o Electron 39, a última série cujo instalador roda no Node 20. Para usar um Electron mais novo, atualize o Node para 22.12 ou superior.      |
 
 ## Stack

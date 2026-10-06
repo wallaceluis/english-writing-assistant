@@ -1,7 +1,7 @@
 import { ClipboardIcon } from './icons'
 import { Kbd } from './Kbd'
 
-// `clipboardEmpty` is the shortcut pressed with nothing (or no text) copied.
+// `clipboardEmpty` is the shortcut pressed with no text selected or copied.
 export function EmptyState({ clipboardEmpty = false }: { clipboardEmpty?: boolean }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 px-10 text-center">
@@ -9,9 +9,9 @@ export function EmptyState({ clipboardEmpty = false }: { clipboardEmpty?: boolea
         <ClipboardIcon width="26" height="26" strokeWidth="1.5" />
       </div>
       <div className="space-y-2">
-        {clipboardEmpty && <p className="text-[12.5px] font-medium text-amber-300">Não encontrei texto no clipboard.</p>}
+        {clipboardEmpty && <p className="text-[12.5px] font-medium text-amber-300">Não encontrei texto selecionado nem copiado.</p>}
         <p className="flex items-center justify-center gap-1.5 text-[14px] font-medium text-zinc-100">
-          Copie um texto e pressione
+          Selecione um texto e pressione
           <span className="flex items-center gap-1">
             <Kbd>Ctrl</Kbd>
             <Kbd>Alt</Kbd>
