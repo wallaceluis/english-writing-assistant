@@ -13,7 +13,8 @@ const settingsFile = (): string => join(app.getPath('userData'), 'settings.json'
 
 function read(): StoredSettings {
   try {
-    return JSON.parse(readFileSync(settingsFile(), 'utf8'))
+    const parsed: unknown = JSON.parse(readFileSync(settingsFile(), 'utf8'))
+    return parsed && typeof parsed === 'object' ? parsed : {}
   } catch {
     return {}
   }

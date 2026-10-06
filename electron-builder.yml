@@ -1,0 +1,20 @@
+appId: com.wallaceluis.english-assist
+productName: English Assist
+directories:
+  output: release
+files:
+  - out/**/*
+  # The tray icon is loaded from here at runtime.
+  - resources/tray.png
+  - package.json
+win:
+  icon: resources/icon.png
+  target:
+    - target: nsis
+      arch: x64
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  artifactName: English-Assist-Setup-${version}.${ext}
+  shortcutName: English Assist

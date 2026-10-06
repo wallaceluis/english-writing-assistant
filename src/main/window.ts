@@ -21,7 +21,8 @@ export function markRendererReady(): void {
 
 export async function sendToRenderer(channel: string, payload: unknown): Promise<void> {
   await rendererReady
-  win?.webContents.send(channel, payload)
+  // The window is already gone when the app quits in the middle of a stream.
+  if (win && !win.isDestroyed()) win.webContents.send(channel, payload)
 }
 
 export function createFloatingWindow(): BrowserWindow {
@@ -87,10 +88,13 @@ export function createFloatingWindow(): BrowserWindow {
 export function showWindow(): void {
   if (!win) return
   const { workArea } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
-  win.setPosition(
-    Math.round(workArea.x + (workArea.width - WINDOW_WIDTH) / 2),
-    Math.round(workArea.y + (workArea.height - WINDOW_HEIGHT) * 0.3)
-  )
+  // setBounds rather than setPosition: the size can drift when moving between monitors with different scaling.
+  win.setBounds({
+    x: Math.round(workArea.x + (workArea.width - WINDOW_WIDTH) / 2),
+    y: Math.round(workArea.y + (workArea.height - WINDOW_HEIGHT) * 0.3),
+    width: WINDOW_WIDTH,
+    height: WINDOW_HEIGHT
+  })
   win.show()
   win.focus()
 }

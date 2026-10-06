@@ -33,12 +33,17 @@ export function SettingsView({ onClose, onSaved }: SettingsViewProps) {
     }
   }, [load])
 
-  const dirty = apiKey.trim() !== '' || (settings !== null && model.trim() !== settings.model)
+  const modelChanged = settings !== null && model.trim() !== settings.model
+  const dirty = apiKey.trim() !== '' || modelChanged
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     if (!dirty) return onClose()
-    const result = await window.api.saveSettings({ apiKey: apiKey.trim() || undefined, model: model.trim() })
+    const result = await window.api.saveSettings({
+      apiKey: apiKey.trim() || undefined,
+      // Untouched, the model keeps following OPENAI_MODEL and the app default.
+      model: modelChanged ? model.trim() : undefined
+    })
     if (result.ok) onSaved()
     else setError(result.message)
   }

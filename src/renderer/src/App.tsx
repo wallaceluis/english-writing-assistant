@@ -37,11 +37,15 @@ export default function App() {
     (session?.status === 'done' || (session?.status === 'error' && session.error?.code !== 'missing-key'))
 
   const copy = useCallback(async () => {
-    if (!canCopy) return
-    await window.api.copy(result)
+    if (!canCopy || copied) return
     setCopied(true)
-    hideTimer.current = window.setTimeout(hide, HIDE_AFTER_COPY_MS)
-  }, [canCopy, result])
+    await window.api.copy(result)
+    window.clearTimeout(hideTimer.current)
+    hideTimer.current = window.setTimeout(() => {
+      hide()
+      setCopied(false)
+    }, HIDE_AFTER_COPY_MS)
+  }, [canCopy, copied, result])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -50,7 +54,7 @@ export default function App() {
         if (view === 'settings') setView('main')
         else hide()
       } else if (event.key === 'Enter' && !(event.target instanceof HTMLButtonElement)) {
-        if (canCopy) void copy()
+        if (canCopy && !event.repeat) void copy()
       } else if (event.ctrlKey && event.key.toLowerCase() === 'r') {
         event.preventDefault()
         if (canRetry) retry()

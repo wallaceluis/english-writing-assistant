@@ -60,7 +60,7 @@ export async function improveText({ apiKey, model, text, signal, onMode, onDelta
       continue
     }
 
-    header += piece
+    header = (header + piece).trimStart()
     const lineEnd = header.indexOf('\n')
     if (lineEnd === -1 && header.length <= HEADER_MAX_LENGTH) continue
 

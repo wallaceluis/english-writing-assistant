@@ -12,12 +12,12 @@
     "build": "npm run typecheck && electron-vite build",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json --composite false && tsc --noEmit -p tsconfig.web.json --composite false",
-    "icons": "node scripts/generate-icons.mjs"
+    "icons": "node scripts/generate-icons.mjs",
+    "dist": "npm run build && electron-builder --win",
+    "dist:dir": "npm run build && electron-builder --win --dir"
   },
   "dependencies": {
-    "openai": "^7.28.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "openai": "^7.28.0"
   },
   "devDependencies": {
     "@types/node": "^20.19.43",
@@ -26,8 +26,11 @@
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.6.1",
     "electron": "^39.8.10",
+    "electron-builder": "^25.1.8",
     "electron-vite": "^2.3.0",
     "postcss": "^8.5.29",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",
     "vite": "^5.4.21"
