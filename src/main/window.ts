@@ -7,6 +7,21 @@ const WINDOW_HEIGHT = 468
 let win: BrowserWindow | null = null
 let quitting = false
 
+// Events sent before the renderer has subscribed would be lost, so they wait for its handshake.
+let resolveRendererReady: () => void
+const rendererReady = new Promise<void>((resolve) => {
+  resolveRendererReady = resolve
+})
+
+export function markRendererReady(): void {
+  resolveRendererReady()
+}
+
+export async function sendToRenderer(channel: string, payload: unknown): Promise<void> {
+  await rendererReady
+  win?.webContents.send(channel, payload)
+}
+
 export function createFloatingWindow(): BrowserWindow {
   win = new BrowserWindow({
     width: WINDOW_WIDTH,
@@ -75,7 +90,3 @@ export function hideWindow(): void {
   win?.hide()
 }
 
-export function toggleWindow(): void {
-  if (win?.isVisible()) hideWindow()
-  else showWindow()
-}

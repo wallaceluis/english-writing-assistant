@@ -1,25 +1,18 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { EmptyState } from './components/EmptyState'
 import { Footer } from './components/Footer'
 import { ResultView } from './components/ResultView'
-import { Badge, TitleBar } from './components/TitleBar'
+import { TitleBar } from './components/TitleBar'
+import { useAssistant } from './hooks/useAssistant'
 
-// Static sample until the clipboard and the OpenAI integration are wired in.
-const PREVIEW = {
-  source: 'Oi pessoal, consegui terminar a revisão do PR. Deixei alguns comentários, me avisem se tiverem dúvidas.',
-  result: "Hi everyone, I've finished reviewing the PR. I left a few comments — let me know if you have any questions."
-}
+const hide = (): void => void window.api.hide()
 
 export default function App() {
-  const [copied, setCopied] = useState(false)
-
-  const copy = useCallback(async () => {
-    await navigator.clipboard.writeText(PREVIEW.result)
-    setCopied(true)
-  }, [])
+  const session = useAssistant()
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') window.close()
+      if (event.key === 'Escape') hide()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
@@ -28,11 +21,21 @@ export default function App() {
   return (
     // The padding leaves transparent room for the card's shadow inside the frameless window.
     <div className="h-full px-4 pb-5 pt-3">
-      <main className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-surface shadow-float motion-safe:animate-pop-in">
+      <main
+        // Replays the entrance animation for each new session.
+        key={session?.id}
+        className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-surface shadow-float motion-safe:animate-pop-in"
+      >
         <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(60%_100%_at_50%_0%,rgba(99,102,241,0.16),transparent)]" />
-        <TitleBar badge={<Badge>PT → EN</Badge>} onClose={() => window.close()} />
-        <ResultView source={PREVIEW.source} result={PREVIEW.result} status="done" />
-        <Footer canCopy copied={copied} onCopy={copy} />
+        <TitleBar onClose={hide} />
+        {session?.source ? (
+          <>
+            <ResultView source={session.source} result="" status="pending" />
+            <Footer canCopy={false} copied={false} onCopy={() => {}} />
+          </>
+        ) : (
+          <EmptyState clipboardEmpty={session !== null} />
+        )}
       </main>
     </div>
   )

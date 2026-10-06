@@ -1,7 +1,9 @@
 import { app, Menu } from 'electron'
+import { startSession } from './assistant'
+import { registerIpcHandlers } from './ipc'
 import { registerShortcut, SHORTCUT_LABEL } from './shortcut'
 import { createTray, notify } from './tray'
-import { createFloatingWindow, showWindow, toggleWindow } from './window'
+import { createFloatingWindow, showWindow } from './window'
 
 if (!app.requestSingleInstanceLock()) {
   app.quit()
@@ -14,13 +16,14 @@ if (!app.requestSingleInstanceLock()) {
 
   app.whenReady().then(() => {
     Menu.setApplicationMenu(null)
+    registerIpcHandlers()
     createFloatingWindow()
-    createTray({ onOpen: showWindow })
+    createTray({ onAssist: startSession, onOpen: showWindow })
 
-    if (!registerShortcut(toggleWindow)) {
+    if (!registerShortcut(startSession)) {
       notify(
         'Atalho indisponível',
-        `${SHORTCUT_LABEL} já está em uso por outro aplicativo. Abra o English Assist pelo ícone da bandeja.`
+        `${SHORTCUT_LABEL} já está em uso por outro aplicativo. Use o menu do ícone na bandeja.`
       )
     }
   })

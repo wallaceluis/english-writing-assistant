@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 type ResultViewProps = {
   source: string
   result: string
-  status: 'loading' | 'streaming' | 'done'
+  status: 'pending' | 'loading' | 'streaming' | 'done'
 }
 
 export function ResultView({ source, result, status }: ResultViewProps) {
@@ -20,7 +20,9 @@ export function ResultView({ source, result, status }: ResultViewProps) {
 
       <section aria-live="polite" aria-busy={status !== 'done'}>
         <Label accent>Inglês</Label>
-        {status === 'loading' ? (
+        {status === 'pending' ? (
+          <p className="mt-1.5 text-[13px] leading-6 text-zinc-500">A versão em inglês deste texto aparece aqui.</p>
+        ) : status === 'loading' ? (
           <Skeleton />
         ) : (
           <p className="mt-1.5 select-text whitespace-pre-wrap break-words text-[15px] leading-7 text-zinc-50">

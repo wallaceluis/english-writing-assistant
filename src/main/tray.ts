@@ -3,19 +3,21 @@ import trayIcon from '../../resources/tray.png?asset'
 import { SHORTCUT_LABEL } from './shortcut'
 
 type TrayActions = {
+  onAssist: () => void
   onOpen: () => void
 }
 
 // Kept at module scope so the tray icon is not garbage collected.
 let tray: Tray | null = null
 
-export function createTray({ onOpen }: TrayActions): Tray {
+export function createTray({ onAssist, onOpen }: TrayActions): Tray {
   tray = new Tray(nativeImage.createFromPath(trayIcon))
   tray.setToolTip(`English Assist — ${SHORTCUT_LABEL}`)
   tray.on('click', onOpen)
   tray.setContextMenu(
     Menu.buildFromTemplate([
-      { label: 'Abrir English Assist', accelerator: SHORTCUT_LABEL, click: onOpen },
+      { label: 'Melhorar texto copiado', accelerator: SHORTCUT_LABEL, click: onAssist },
+      { label: 'Abrir janela', click: onOpen },
       { type: 'separator' },
       {
         label: 'Iniciar com o Windows',
