@@ -1,5 +1,6 @@
 import { app, BrowserWindow, screen, shell } from 'electron'
 import { join } from 'node:path'
+import appIcon from '../../resources/icon.png?asset'
 import { IPC, type View } from '../shared/ipc'
 
 const WINDOW_WIDTH = 624
@@ -8,6 +9,9 @@ const WINDOW_HEIGHT = 468
 let win: BrowserWindow | null = null
 let quitting = false
 let autoHide = true
+// When losing focus last minimized the window, to tell a taskbar click that wants to close it.
+let blurMinimizedAt = 0
+const TASKBAR_TOGGLE_MS = 300
 
 // Events sent before the renderer has subscribed would be lost, so they wait for its handshake.
 let resolveRendererReady: () => void
@@ -36,11 +40,10 @@ export function createFloatingWindow(): BrowserWindow {
     hasShadow: false,
     resizable: false,
     maximizable: false,
-    minimizable: false,
     fullscreenable: false,
-    skipTaskbar: true,
     alwaysOnTop: true,
     title: 'English Assist',
+    icon: appIcon,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -49,7 +52,7 @@ export function createFloatingWindow(): BrowserWindow {
     }
   })
 
-  // The app lives in the tray: closing or clicking away only hides the window.
+  // Closing or clicking away only minimizes the window, which keeps its button on the taskbar.
   app.on('before-quit', () => {
     quitting = true
   })
@@ -59,8 +62,16 @@ export function createFloatingWindow(): BrowserWindow {
     hideWindow()
   })
   win.on('blur', () => {
-    if (autoHide && !win?.webContents.isDevToolsOpened()) hideWindow()
+    if (!win || win.isMinimized() || !autoHide || win.webContents.isDevToolsOpened()) return
+    blurMinimizedAt = Date.now()
+    hideWindow()
   })
+  // Clicking the taskbar button of the open window first blurs it (minimizing it) and then restores it.
+  win.on('restore', () => {
+    if (Date.now() - blurMinimizedAt < TASKBAR_TOGGLE_MS) hideWindow()
+  })
+  // Starts minimized, not hidden, so the taskbar button is there from the beginning.
+  win.minimize()
 
   // Links open in the default browser; the window itself never leaves the app.
   win.webContents.setWindowOpenHandler(({ url }) => {
@@ -87,6 +98,8 @@ export function createFloatingWindow(): BrowserWindow {
 // Opens on whichever monitor the cursor is in, slightly above the vertical center.
 export function showWindow(): void {
   if (!win) return
+  blurMinimizedAt = 0
+  if (win.isMinimized()) win.restore()
   const { workArea } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
   // setBounds rather than setPosition: the size can drift when moving between monitors with different scaling.
   win.setBounds({
@@ -100,7 +113,7 @@ export function showWindow(): void {
 }
 
 export function hideWindow(): void {
-  win?.hide()
+  win?.minimize()
 }
 
 export function setAutoHide(enabled: boolean): void {

@@ -4,8 +4,9 @@ directories:
   output: release
 files:
   - out/**/*
-  # The tray icon is loaded from here at runtime.
+  # The tray and window icons are loaded from here at runtime.
   - resources/tray.png
+  - resources/icon.png
   - package.json
 win:
   icon: resources/icon.png
