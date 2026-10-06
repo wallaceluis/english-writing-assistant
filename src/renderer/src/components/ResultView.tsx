@@ -10,7 +10,7 @@ type ResultViewProps = {
 }
 
 export function ResultView({ session, onOpenSettings, onRetry }: ResultViewProps) {
-  const { source, result, status } = session
+  const { source, result, status, provider } = session
 
   return (
     <div className="scroll-thin flex-1 overflow-y-auto px-5 py-4">
@@ -24,7 +24,15 @@ export function ResultView({ session, onOpenSettings, onRetry }: ResultViewProps
       <div className="my-4 h-px bg-white/[0.06]" />
 
       <section aria-live="polite" aria-busy={status === 'loading' || status === 'streaming'}>
-        <Label accent>Inglês</Label>
+        <div className="flex items-baseline justify-between gap-3">
+          <Label accent>Inglês</Label>
+          {provider && status !== 'error' && (
+            <span className="truncate text-[11px] text-zinc-500" title={provider.model}>
+              {provider.fallback && <span className="text-amber-300/80">fallback · </span>}
+              via {provider.name}
+            </span>
+          )}
+        </div>
         {status === 'error' ? (
           <ErrorCard session={session} onOpenSettings={onOpenSettings} onRetry={onRetry} />
         ) : status === 'loading' ? (
@@ -80,7 +88,7 @@ function ErrorCard({ session, onOpenSettings, onRetry }: ResultViewProps) {
             className="mt-3 border border-white/10 bg-white/[0.06] !text-zinc-100 hover:bg-white/[0.1]"
             onClick={fixInSettings ? onOpenSettings : onRetry}
           >
-            {needsSetup ? 'Configurar chave' : fixInSettings ? 'Abrir configurações' : 'Tentar de novo'}
+            {needsSetup ? 'Configurar provedor' : fixInSettings ? 'Abrir configurações' : 'Tentar de novo'}
           </Button>
         )}
       </div>

@@ -27,7 +27,7 @@ export function IconButton({ label, className = '', ...props }: ButtonHTMLAttrib
       type="button"
       title={label}
       aria-label={label}
-      className={`grid h-7 w-7 place-items-center rounded-md text-zinc-400 transition-colors hover:bg-white/[0.08] hover:text-zinc-100 ${className}`}
+      className={`grid h-7 w-7 place-items-center rounded-md text-zinc-400 transition-colors hover:bg-white/[0.08] hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-25 ${className}`}
       {...props}
     />
   )

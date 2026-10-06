@@ -1,5 +1,6 @@
 import OpenAI from 'openai'
 import type { ErrorCode, Mode } from '../shared/ipc'
+import type { ResolvedProvider } from './settings'
 
 const SYSTEM_PROMPT = `You are a writing assistant for a Brazilian professional who writes emails, Slack messages and pull request comments in English.
 
@@ -15,22 +16,30 @@ Answer in exactly this format: the first line is "LANG: pt" if the original text
 const HEADER = /^\s*LANG:\s*(pt|en)\s*$/i
 // A well-formed header line is far shorter than this; past it, the model skipped the header.
 const HEADER_MAX_LENGTH = 24
+const REQUEST_TIMEOUT_MS = 30_000
 
 type ImproveOptions = {
-  apiKey: string
-  model: string
+  provider: ResolvedProvider
   text: string
   signal: AbortSignal
+  /** Automatic retries on rate limits and server errors. Zero hands over to the next provider sooner. */
+  maxRetries: number
   onMode: (mode: Mode) => void
   onDelta: (delta: string) => void
 }
 
 // Streams the English version through `onDelta` and resolves with the full text.
-export async function improveText({ apiKey, model, text, signal, onMode, onDelta }: ImproveOptions): Promise<string> {
-  const client = new OpenAI({ apiKey })
+export async function improveText({ provider, text, signal, maxRetries, onMode, onDelta }: ImproveOptions): Promise<string> {
+  const client = new OpenAI({
+    // The SDK insists on a key even for local servers that ignore it.
+    apiKey: provider.apiKey ?? 'not-needed',
+    baseURL: provider.baseURL,
+    maxRetries,
+    timeout: REQUEST_TIMEOUT_MS
+  })
   const stream = await client.chat.completions.create(
     {
-      model,
+      model: provider.model,
       stream: true,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
@@ -80,23 +89,24 @@ export async function improveText({ apiKey, model, text, signal, onMode, onDelta
   return output.trimEnd()
 }
 
-export function describeError(error: unknown, model: string): { code: ErrorCode; message: string } {
+export function describeError(error: unknown, { name, model }: ResolvedProvider): { code: ErrorCode; message: string } {
   if (error instanceof OpenAI.APIConnectionError) {
-    return { code: 'network', message: 'Não foi possível conectar à OpenAI. Verifique sua conexão com a internet.' }
+    return { code: 'network', message: `Não foi possível conectar a ${name}. Verifique sua conexão e se o serviço está no ar.` }
   }
   if (error instanceof OpenAI.APIError) {
     if (error.status === 401) {
-      return { code: 'invalid-key', message: 'A OpenAI recusou a chave de API. Confira se ela está correta e ativa.' }
+      return { code: 'invalid-key', message: `${name} recusou a chave de API. Confira se ela está correta e ativa.` }
     }
     if (error.status === 404 || (error.status === 403 && error.code === 'model_not_found')) {
-      return { code: 'model', message: `O modelo "${model}" não existe ou não está disponível para esta chave.` }
+      return { code: 'model', message: `O modelo "${model}" não existe ou não está disponível em ${name}.` }
+    }
+    if (error.status === 402 || (error.status === 429 && error.code === 'insufficient_quota')) {
+      return { code: 'quota', message: `Sua conta em ${name} está sem créditos ou sem cota.` }
     }
     if (error.status === 429) {
-      return error.code === 'insufficient_quota'
-        ? { code: 'quota', message: 'Sua conta da OpenAI está sem créditos. Verifique o faturamento em platform.openai.com.' }
-        : { code: 'rate-limit', message: 'Muitas requisições em pouco tempo. Aguarde alguns segundos e tente de novo.' }
+      return { code: 'rate-limit', message: `${name} atingiu o limite de requisições. Aguarde um pouco e tente de novo.` }
     }
-    return { code: 'unknown', message: `A OpenAI retornou um erro: ${error.message}` }
+    return { code: 'unknown', message: `${name} retornou um erro: ${error.message}` }
   }
   return { code: 'unknown', message: error instanceof Error ? error.message : 'Erro inesperado.' }
 }

@@ -14,8 +14,9 @@ const api: AssistApi = {
   copy: (text) => ipcRenderer.invoke(IPC.copy, text),
   retry: () => ipcRenderer.invoke(IPC.retry),
   getSettings: () => ipcRenderer.invoke(IPC.getSettings),
-  saveSettings: (patch) => ipcRenderer.invoke(IPC.saveSettings, patch),
-  clearApiKey: () => ipcRenderer.invoke(IPC.clearApiKey),
+  saveProvider: (patch) => ipcRenderer.invoke(IPC.saveProvider, patch),
+  removeProvider: (id) => ipcRenderer.invoke(IPC.removeProvider, id),
+  moveProvider: (id, direction) => ipcRenderer.invoke(IPC.moveProvider, id, direction),
   onSessionEvent: (listener) => subscribe(IPC.sessionEvent, listener),
   onNavigate: (listener) => subscribe(IPC.navigate, listener)
 }

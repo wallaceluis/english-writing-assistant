@@ -47,11 +47,17 @@ export default function App() {
     }, HIDE_AFTER_COPY_MS)
   }, [canCopy, copied, result])
 
+  const closeSettings = useCallback(() => {
+    setView('main')
+    // The failed request was most likely waiting on a provider that has just been configured.
+    if (session?.status === 'error') retry()
+  }, [session?.status])
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault()
-        if (view === 'settings') setView('main')
+        if (view === 'settings') closeSettings()
         else hide()
       } else if (event.key === 'Enter' && !(event.target instanceof HTMLButtonElement)) {
         if (canCopy && !event.repeat) void copy()
@@ -62,13 +68,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [view, canCopy, canRetry, copy])
-
-  const onSettingsSaved = () => {
-    setView('main')
-    // The failed request was most likely waiting on the key or model just saved.
-    if (session?.status === 'error') retry()
-  }
+  }, [view, canCopy, canRetry, copy, closeSettings])
 
   return (
     // The padding leaves transparent room for the card's shadow inside the frameless window.
@@ -91,7 +91,7 @@ export default function App() {
           onClose={hide}
         />
         {view === 'settings' ? (
-          <SettingsView onClose={() => setView('main')} onSaved={onSettingsSaved} />
+          <SettingsView onClose={closeSettings} />
         ) : session?.source ? (
           <>
             <ResultView session={session} onOpenSettings={() => setView('settings')} onRetry={retry} />

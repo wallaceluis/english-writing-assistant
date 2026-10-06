@@ -83,7 +83,25 @@ export const EyeOffIcon = (props: IconProps) => (
   </Icon>
 )
 
-export const ClipboardIcon =(props: IconProps) => (
+export const ChevronUpIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M6 15l6-6 6 6" />
+  </Icon>
+)
+
+export const ChevronDownIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M6 9l6 6 6-6" />
+  </Icon>
+)
+
+export const ChevronRightIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M9 6l6 6-6 6" />
+  </Icon>
+)
+
+export const ClipboardIcon = (props: IconProps) => (
   <Icon {...props}>
     <rect x="5.5" y="5" width="13" height="16" rx="2.5" />
     <path d="M9 5V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V5" />

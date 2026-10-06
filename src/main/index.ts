@@ -1,12 +1,12 @@
 import { app, Menu } from 'electron'
 import { startSession } from './assistant'
 import { registerIpcHandlers } from './ipc'
-import { getApiKey } from './settings'
+import { getActiveProviders } from './settings'
 import { registerShortcut, SHORTCUT_LABEL } from './shortcut'
 import { createTray, notify } from './tray'
 import { createFloatingWindow, openView, showWindow } from './window'
 
-// Optional .env at the project root (OPENAI_API_KEY, OPENAI_MODEL) for development.
+// Optional .env at the project root (see .env.example) for development.
 if (!app.isPackaged) {
   try {
     process.loadEnvFile()
@@ -41,7 +41,7 @@ if (!app.requestSingleInstanceLock()) {
       )
     }
 
-    // First run: nothing works without a key, so start on the settings screen.
-    if (!getApiKey()) void openView('settings')
+    // First run: nothing works without a provider, so start on the settings screen.
+    if (getActiveProviders().length === 0) void openView('settings')
   })
 }

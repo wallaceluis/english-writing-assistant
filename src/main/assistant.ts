@@ -1,7 +1,7 @@
 import { clipboard } from 'electron'
-import { IPC, type SessionEvent } from '../shared/ipc'
+import { IPC, type ErrorCode, type SessionEvent } from '../shared/ipc'
 import { describeError, improveText } from './openai'
-import { getApiKey, getModel } from './settings'
+import { getActiveProviders } from './settings'
 import { sendToRenderer, showWindow } from './window'
 
 const MAX_SOURCE_LENGTH = 12_000
@@ -42,27 +42,40 @@ async function run(source: string): Promise<void> {
     return
   }
 
-  const apiKey = getApiKey()
-  if (!apiKey) {
-    emit({ type: 'error', id, code: 'missing-key', message: 'Configure sua chave de API da OpenAI para começar.' })
+  const providers = getActiveProviders()
+  if (providers.length === 0) {
+    emit({ type: 'error', id, code: 'missing-key', message: 'Configure um provedor de IA para começar.' })
     return
   }
 
-  const model = getModel()
-  try {
-    const text = await improveText({
-      apiKey,
-      model,
-      text: source,
-      signal: controller.signal,
-      onMode: (mode) => emit({ type: 'mode', id, mode }),
-      onDelta: (delta) => emit({ type: 'delta', id, delta })
-    })
-    if (text) emit({ type: 'done', id, text })
-    else emit({ type: 'error', id, code: 'unknown', message: 'O modelo não retornou nenhum texto. Tente de novo.' })
-  } catch (error) {
-    // Aborted because a newer session replaced this one.
-    if (controller.signal.aborted) return
-    emit({ type: 'error', id, ...describeError(error, model) })
+  // Each provider is tried in order; any failure hands over to the next one.
+  let failure: { code: ErrorCode; message: string } | null = null
+  for (const [index, provider] of providers.entries()) {
+    const isLast = index === providers.length - 1
+    emit({ type: 'provider', id, name: provider.name, model: provider.model, fallback: index > 0 })
+    try {
+      const text = await improveText({
+        provider,
+        text: source,
+        signal: controller.signal,
+        maxRetries: isLast ? 2 : 0,
+        onMode: (mode) => emit({ type: 'mode', id, mode }),
+        onDelta: (delta) => emit({ type: 'delta', id, delta })
+      })
+      if (text) {
+        emit({ type: 'done', id, text })
+        return
+      }
+      failure = { code: 'unknown', message: `${provider.name} não retornou nenhum texto.` }
+    } catch (error) {
+      // Aborted because a newer session replaced this one.
+      if (controller.signal.aborted) return
+      failure = describeError(error, provider)
+    }
+  }
+
+  if (failure) {
+    const prefix = providers.length > 1 ? 'Nenhum provedor respondeu. Último erro: ' : ''
+    emit({ type: 'error', id, code: failure.code, message: prefix + failure.message })
   }
 }

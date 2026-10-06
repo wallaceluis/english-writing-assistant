@@ -6,18 +6,29 @@ export type Session = {
   source: string
   result: string
   mode: Mode | null
+  /** Who is answering; `fallback` when an earlier provider failed. */
+  provider: { name: string; model: string; fallback: boolean } | null
   status: 'loading' | 'streaming' | 'done' | 'error'
   error: { code: ErrorCode; message: string } | null
 }
 
 function reducer(state: Session | null, event: SessionEvent): Session | null {
   if (event.type === 'start') {
-    return { id: event.id, source: event.source, result: '', mode: null, status: 'loading', error: null }
+    return { id: event.id, source: event.source, result: '', mode: null, provider: null, status: 'loading', error: null }
   }
   // Late events from a session that has already been replaced.
   if (!state || state.id !== event.id) return state
 
   switch (event.type) {
+    case 'provider':
+      // Whatever the previous provider streamed before failing is thrown away.
+      return {
+        ...state,
+        provider: { name: event.name, model: event.model, fallback: event.fallback },
+        result: '',
+        mode: null,
+        status: 'loading'
+      }
     case 'mode':
       return { ...state, mode: event.mode }
     case 'delta':
