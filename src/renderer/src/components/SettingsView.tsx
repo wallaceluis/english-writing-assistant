@@ -3,6 +3,7 @@ import type { ProviderState, PublicSettings } from '../../../shared/ipc'
 import { getPreset, type ProviderId } from '../../../shared/providers'
 import { Button, IconButton } from './Button'
 import { ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, EyeIcon, EyeOffIcon } from './icons'
+import { PreferencesPanel } from './PreferencesPanel'
 import { ShortcutsPanel } from './ShortcutsPanel'
 
 const INPUT =
@@ -12,7 +13,8 @@ const FOOTER = 'flex h-[52px] shrink-0 items-center justify-end gap-1.5 border-t
 
 const TABS = [
   { id: 'providers', label: 'Provedores' },
-  { id: 'shortcuts', label: 'Atalhos' }
+  { id: 'shortcuts', label: 'Atalhos' },
+  { id: 'preferences', label: 'Preferências' }
 ] as const
 
 type Tab = (typeof TABS)[number]['id']
@@ -56,6 +58,8 @@ export function SettingsView({ onClose }: { onClose: () => void }) {
     <div className="flex min-h-0 flex-1 flex-col">
       {tab === 'shortcuts' && settings ? (
         <ShortcutsPanel shortcuts={settings.shortcuts} onChanged={() => void load()} />
+      ) : tab === 'preferences' && settings ? (
+        <PreferencesPanel preferences={settings.preferences} onChanged={() => void load()} />
       ) : (
         <div className="scroll-thin flex-1 overflow-y-auto px-3 py-3">
           <p className="px-2 pb-2 text-[12px] leading-5 text-zinc-400">

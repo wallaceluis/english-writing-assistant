@@ -32,15 +32,17 @@ if (!app.requestSingleInstanceLock()) {
     startSelectionHelper()
     createFloatingWindow()
     createTray({
-      onAssist: () => void startSessionFromClipboard(),
-      onListen: () => void startSessionFromClipboard({ speak: true }),
+      onAssist: () => void startSessionFromClipboard({ direction: 'to-english' }),
+      onListen: () => void startSessionFromClipboard({ direction: 'to-english', speak: true }),
+      onPortuguese: () => void startSessionFromClipboard({ direction: 'to-portuguese' }),
       onOpen: showWindow,
       onSettings: () => void openView('settings')
     })
 
     const unavailable = initShortcuts({
-      assist: () => void startSession(),
-      listen: () => void startSession({ speak: true })
+      assist: () => void startSession({ direction: 'to-english' }),
+      listen: () => void startSession({ direction: 'to-english', speak: true }),
+      portuguese: () => void startSession({ direction: 'to-portuguese' })
     })
     if (unavailable.length > 0) {
       const shortcuts = getShortcuts()

@@ -1,46 +1,47 @@
 import { clipboard } from 'electron'
-import { IPC, type ErrorCode, type SessionEvent } from '../shared/ipc'
+import { IPC, MAX_SOURCE_LENGTH, type Direction, type ErrorCode, type RunRequest, type SessionEvent } from '../shared/ipc'
 import { describeError, improveText } from './openai'
 import { readSelectionOrClipboard } from './selection'
-import { getActiveProviders } from './settings'
+import { getActiveProviders, getPreferences } from './settings'
 import { sendToRenderer, showWindow } from './window'
 
-const MAX_SOURCE_LENGTH = 12_000
-
 let lastId = 0
-let current: { source: string; controller: AbortController } | null = null
+let current: { controller: AbortController } | null = null
 
 function emit(event: SessionEvent): void {
   void sendToRenderer(IPC.sessionEvent, event)
 }
 
-type SessionOptions = {
+type Trigger = {
+  direction: Direction
   /** Read the result aloud as soon as it is ready. */
   speak?: boolean
 }
 
 // Runs on every press of a global shortcut.
-export async function startSession({ speak = false }: SessionOptions = {}): Promise<void> {
-  await run(await readSelectionOrClipboard(), speak)
+export async function startSession({ direction, speak = false }: Trigger): Promise<void> {
+  await run({ source: await readSelectionOrClipboard(), direction, tone: getPreferences().tone }, speak)
 }
 
 // From the tray menu there is no focused selection to read.
-export function startSessionFromClipboard({ speak = false }: SessionOptions = {}): Promise<void> {
-  return run(clipboard.readText().trim(), speak)
+export function startSessionFromClipboard({ direction, speak = false }: Trigger): Promise<void> {
+  return run({ source: clipboard.readText().trim(), direction, tone: getPreferences().tone }, speak)
 }
 
-export async function retrySession(): Promise<void> {
-  if (current) await run(current.source, false)
+// Asked for by the window: retry, another tone, another direction.
+export function runRequest(request: RunRequest): Promise<void> {
+  return run(request, false)
 }
 
-async function run(source: string, speak: boolean): Promise<void> {
+async function run(request: RunRequest, speak: boolean): Promise<void> {
   current?.controller.abort()
   const controller = new AbortController()
-  current = { source, controller }
+  current = { controller }
   const id = ++lastId
+  const { source } = request
 
   showWindow()
-  emit({ type: 'start', id, source, speak })
+  emit({ type: 'start', id, speak, ...request })
   if (!source) return
 
   if (source.length > MAX_SOURCE_LENGTH) {
@@ -48,7 +49,7 @@ async function run(source: string, speak: boolean): Promise<void> {
       type: 'error',
       id,
       code: 'too-long',
-      message: `O texto copiado tem ${source.length.toLocaleString('pt-BR')} caracteres. O limite é ${MAX_SOURCE_LENGTH.toLocaleString('pt-BR')}.`
+      message: `O texto tem ${source.length.toLocaleString('pt-BR')} caracteres. O limite é ${MAX_SOURCE_LENGTH.toLocaleString('pt-BR')}.`
     })
     return
   }
@@ -60,6 +61,7 @@ async function run(source: string, speak: boolean): Promise<void> {
   }
 
   // Each provider is tried in order; any failure hands over to the next one.
+  const { glossary } = getPreferences()
   let failure: { code: ErrorCode; message: string } | null = null
   for (const [index, provider] of providers.entries()) {
     const isLast = index === providers.length - 1
@@ -67,7 +69,8 @@ async function run(source: string, speak: boolean): Promise<void> {
     try {
       const text = await improveText({
         provider,
-        text: source,
+        request,
+        glossary,
         signal: controller.signal,
         maxRetries: isLast ? 2 : 0,
         onMode: (mode) => emit({ type: 'mode', id, mode }),

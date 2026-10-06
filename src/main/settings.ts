@@ -1,7 +1,15 @@
 import { app, safeStorage } from 'electron'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import type { ProviderPatch, ProviderState, PublicSettings, SaveResult } from '../shared/ipc'
+import {
+  MAX_GLOSSARY_LENGTH,
+  TONES,
+  type Preferences,
+  type ProviderPatch,
+  type ProviderState,
+  type PublicSettings,
+  type SaveResult
+} from '../shared/ipc'
 import { getPreset, isProviderId, PROVIDERS, type ProviderId } from '../shared/providers'
 import { DEFAULT_SHORTCUTS, type ShortcutAction, type Shortcuts } from '../shared/shortcuts'
 
@@ -20,7 +28,10 @@ type StoredSettings = {
   order?: ProviderId[]
   /** Only the shortcuts changed by the user. */
   shortcuts?: Partial<Shortcuts>
+  preferences?: Partial<Preferences>
 }
+
+const DEFAULT_PREFERENCES: Preferences = { tone: 'professional', glossary: '' }
 
 export type ResolvedProvider = {
   id: ProviderId
@@ -102,10 +113,25 @@ export function saveShortcut(action: ShortcutAction, accelerator: string): void 
   write({ ...settings, shortcuts: { ...settings.shortcuts, [action]: accelerator } })
 }
 
+export function getPreferences(): Preferences {
+  return { ...DEFAULT_PREFERENCES, ...read().preferences }
+}
+
+// Values come from the renderer, so anything unexpected is dropped rather than stored.
+export function savePreferences(patch: Partial<Record<keyof Preferences, unknown>>): void {
+  const settings = read()
+  const next: Partial<Preferences> = { ...settings.preferences }
+  const tone = TONES.find((candidate) => candidate.id === patch.tone)
+  if (tone) next.tone = tone.id
+  if (typeof patch.glossary === 'string') next.glossary = patch.glossary.slice(0, MAX_GLOSSARY_LENGTH)
+  write({ ...settings, preferences: next })
+}
+
 export function getPublicSettings(): PublicSettings {
   return {
     providers: resolveAll(read()).map(({ apiKey: _apiKey, ...state }) => state),
-    shortcuts: getShortcuts()
+    shortcuts: getShortcuts(),
+    preferences: getPreferences()
   }
 }
 

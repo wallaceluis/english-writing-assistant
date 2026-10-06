@@ -1,9 +1,9 @@
 import { clipboard, ipcMain } from 'electron'
-import { IPC, type ProviderPatch, type SaveResult } from '../shared/ipc'
+import { IPC, MAX_SOURCE_LENGTH, TONES, type ProviderPatch, type RunRequest, type SaveResult } from '../shared/ipc'
 import { isProviderId } from '../shared/providers'
 import { isShortcutAction } from '../shared/shortcuts'
-import { retrySession } from './assistant'
-import { getPublicSettings, moveProvider, removeProvider, saveProvider } from './settings'
+import { runRequest } from './assistant'
+import { getPublicSettings, moveProvider, removeProvider, savePreferences, saveProvider } from './settings'
 import { changeShortcut, suspendShortcuts } from './shortcut'
 import { refreshTray } from './tray'
 import { hideWindow, markRendererReady, setAutoHide } from './window'
@@ -17,7 +17,16 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.copy, (_event, value: unknown) => {
     if (typeof value === 'string') clipboard.writeText(value)
   })
-  ipcMain.handle(IPC.retry, retrySession)
+  ipcMain.handle(IPC.run, (_event, request: Partial<Record<keyof RunRequest, unknown>> | null) => {
+    const { source, direction, tone } = request ?? {}
+    if (typeof source !== 'string' || source.length > MAX_SOURCE_LENGTH) return
+    if (direction !== 'to-english' && direction !== 'to-portuguese') return
+    const known = TONES.find((candidate) => candidate.id === tone)
+    if (known) return runRequest({ source, direction, tone: known.id })
+  })
+  ipcMain.handle(IPC.savePreferences, (_event, patch: unknown) => {
+    if (patch && typeof patch === 'object') savePreferences(patch)
+  })
   ipcMain.handle(IPC.getSettings, getPublicSettings)
   ipcMain.handle(IPC.saveProvider, (_event, patch: Partial<Record<keyof ProviderPatch, unknown>> | null): SaveResult => {
     if (!isProviderId(patch?.id)) return { ok: false, message: 'Provedor desconhecido.' }

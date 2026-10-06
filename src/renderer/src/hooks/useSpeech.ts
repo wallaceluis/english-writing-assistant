@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-// Reads text aloud with the English voices installed in Windows: free, offline and with no API involved.
+export type SpeechLanguage = 'en' | 'pt'
+
+const PREFERRED_LOCALE: Record<SpeechLanguage, string> = { en: 'en-US', pt: 'pt-BR' }
+
+// Reads text aloud with the voices installed in Windows: free, offline and with no API involved.
 export function useSpeech() {
-  const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null)
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([])
   const [speaking, setSpeaking] = useState(false)
   const current = useRef<SpeechSynthesisUtterance | null>(null)
 
@@ -14,27 +18,33 @@ export function useSpeech() {
 
   useEffect(() => {
     // The voice list arrives asynchronously, after the first call.
-    const pickVoice = () => {
-      const english = speechSynthesis.getVoices().filter((candidate) => candidate.lang.toLowerCase().startsWith('en'))
-      setVoice(english.find((candidate) => candidate.lang === 'en-US') ?? english[0] ?? null)
-    }
+    const loadVoices = () => setVoices(speechSynthesis.getVoices())
     // The window is minimized rather than closed, so speech would keep going in the background.
     const stopWhenHidden = () => {
       if (document.hidden) stop()
     }
 
-    pickVoice()
-    speechSynthesis.addEventListener('voiceschanged', pickVoice)
+    loadVoices()
+    speechSynthesis.addEventListener('voiceschanged', loadVoices)
     document.addEventListener('visibilitychange', stopWhenHidden)
     return () => {
-      speechSynthesis.removeEventListener('voiceschanged', pickVoice)
+      speechSynthesis.removeEventListener('voiceschanged', loadVoices)
       document.removeEventListener('visibilitychange', stopWhenHidden)
       stop()
     }
   }, [stop])
 
+  const voiceFor = useCallback(
+    (language: SpeechLanguage) => {
+      const matching = voices.filter((voice) => voice.lang.toLowerCase().startsWith(language))
+      return matching.find((voice) => voice.lang === PREFERRED_LOCALE[language]) ?? matching[0] ?? null
+    },
+    [voices]
+  )
+
   const speak = useCallback(
-    (text: string) => {
+    (text: string, language: SpeechLanguage) => {
+      const voice = voiceFor(language)
       if (!voice || !text) return
       speechSynthesis.cancel()
       const utterance = new SpeechSynthesisUtterance(text)
@@ -52,8 +62,11 @@ export function useSpeech() {
       setSpeaking(true)
       speechSynthesis.speak(utterance)
     },
-    [voice]
+    [voiceFor]
   )
 
-  return { available: voice !== null, speaking, speak, stop }
+  /** False when Windows has no voice installed for the language. */
+  const canSpeak = useCallback((language: SpeechLanguage) => voiceFor(language) !== null, [voiceFor])
+
+  return { canSpeak, speaking, speak, stop }
 }

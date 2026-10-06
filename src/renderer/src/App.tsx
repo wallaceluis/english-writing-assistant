@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { View } from '../../shared/ipc'
+import type { PublicSettings, Tone, View } from '../../shared/ipc'
 import { DEFAULT_SHORTCUTS, formatAccelerator } from '../../shared/shortcuts'
 import { IconButton } from './components/Button'
 import { EmptyState } from './components/EmptyState'
@@ -15,20 +15,19 @@ import { useSpeech } from './hooks/useSpeech'
 const HIDE_AFTER_COPY_MS = 450
 
 const hide = (): void => void window.api.hide()
-const retry = (): void => void window.api.retry()
 
 export default function App() {
   const session = useAssistant()
   const [view, setView] = useState<View>('main')
   const [copied, setCopied] = useState(false)
+  const [settings, setSettings] = useState<PublicSettings | null>(null)
   const hideTimer = useRef<number>()
-  const speech = useSpeech()
-  const [assistShortcut, setAssistShortcut] = useState(DEFAULT_SHORTCUTS.assist)
   const spokenFor = useRef<number>()
+  const speech = useSpeech()
 
-  // Reloaded whenever the settings screen closes, where the shortcut can change.
+  // Reloaded whenever the settings screen closes, where shortcuts and preferences can change.
   useEffect(() => {
-    if (view === 'main') void window.api.getSettings().then((settings) => setAssistShortcut(settings.shortcuts.assist))
+    if (view === 'main') void window.api.getSettings().then(setSettings)
   }, [view])
 
   useEffect(() => window.api.onNavigate(setView), [])
@@ -41,19 +40,31 @@ export default function App() {
     if (session) setView('main')
   }, [session?.id, speech.stop])
 
+  const language = session?.direction === 'to-portuguese' ? 'pt' : 'en'
+  const canSpeak = speech.canSpeak(language)
+
   // The "translate and listen" shortcut: speak once, as soon as the text is complete.
   // Declared after the effect above, which silences the previous session.
   useEffect(() => {
-    if (!session?.speak || session.status !== 'done' || !speech.available || spokenFor.current === session.id) return
+    if (!session?.speak || session.status !== 'done' || !canSpeak || spokenFor.current === session.id) return
     spokenFor.current = session.id
-    speech.speak(session.result)
-  }, [session, speech.available, speech.speak])
+    speech.speak(session.result, language)
+  }, [session, canSpeak, language, speech.speak])
 
   const result = session?.status === 'done' ? session.result : ''
   const canCopy = view === 'main' && result !== ''
   const canRetry =
     view === 'main' &&
     (session?.status === 'done' || (session?.status === 'error' && session.error?.code !== 'missing-key'))
+
+  // Same text again: a retry, or another tone.
+  const rerun = useCallback(
+    (tone?: Tone) => {
+      if (!session) return
+      void window.api.run({ source: session.source, direction: session.direction, tone: tone ?? session.tone })
+    },
+    [session?.source, session?.direction, session?.tone]
+  )
 
   const copy = useCallback(async () => {
     if (!canCopy || copied) return
@@ -68,14 +79,14 @@ export default function App() {
 
   const toggleListen = useCallback(() => {
     if (speech.speaking) speech.stop()
-    else if (canCopy) speech.speak(result)
-  }, [speech.speaking, speech.stop, speech.speak, canCopy, result])
+    else if (canCopy) speech.speak(result, language)
+  }, [speech.speaking, speech.stop, speech.speak, canCopy, result, language])
 
   const closeSettings = useCallback(() => {
     setView('main')
     // The failed request was most likely waiting on a provider that has just been configured.
-    if (session?.status === 'error') retry()
-  }, [session?.status])
+    if (session?.status === 'error') rerun()
+  }, [session?.status, rerun])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -87,7 +98,7 @@ export default function App() {
         if (canCopy && !event.repeat) void copy()
       } else if (event.ctrlKey && event.key.toLowerCase() === 'r') {
         event.preventDefault()
-        if (canRetry) retry()
+        if (canRetry) rerun()
       } else if (event.ctrlKey && event.key.toLowerCase() === 'l') {
         event.preventDefault()
         toggleListen()
@@ -95,7 +106,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [view, canCopy, canRetry, copy, closeSettings, toggleListen])
+  }, [view, canCopy, canRetry, copy, rerun, closeSettings, toggleListen])
 
   return (
     // The padding leaves transparent room for the card's shadow inside the frameless window.
@@ -121,18 +132,27 @@ export default function App() {
           <SettingsView onClose={closeSettings} />
         ) : session?.source ? (
           <>
-            <ResultView session={session} onOpenSettings={() => setView('settings')} onRetry={retry} />
+            <ResultView
+              session={session}
+              onOpenSettings={() => setView('settings')}
+              onRetry={() => rerun()}
+              onTone={rerun}
+            />
             <Footer
+              provider={session.status === 'error' ? null : session.provider}
               canCopy={canCopy}
               copied={copied}
               onCopy={copy}
-              onRetry={canRetry ? retry : undefined}
-              onListen={speech.available ? toggleListen : undefined}
+              onRetry={canRetry ? () => rerun() : undefined}
+              onListen={canSpeak ? toggleListen : undefined}
               listening={speech.speaking}
             />
           </>
         ) : (
-          <EmptyState clipboardEmpty={session !== null} shortcut={formatAccelerator(assistShortcut)} />
+          <EmptyState
+            clipboardEmpty={session !== null}
+            shortcut={formatAccelerator(settings?.shortcuts.assist ?? DEFAULT_SHORTCUTS.assist)}
+          />
         )}
       </main>
     </div>
@@ -142,8 +162,8 @@ export default function App() {
 function statusBadge(session: Session | null) {
   if (!session?.source) return null
   if (session.status === 'loading' || session.status === 'streaming') return <Badge busy>Escrevendo</Badge>
-  if (session.status === 'done' && session.mode) {
-    return <Badge>{session.mode === 'translated' ? 'PT → EN' : 'EN revisado'}</Badge>
-  }
+  if (session.status !== 'done') return null
+  if (session.direction === 'to-portuguese') return <Badge>EN → PT</Badge>
+  if (session.mode) return <Badge>{session.mode === 'translated' ? 'PT → EN' : 'EN revisado'}</Badge>
   return null
 }

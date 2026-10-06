@@ -6,6 +6,7 @@ import { getShortcuts } from './settings'
 type TrayActions = {
   onAssist: () => void
   onListen: () => void
+  onPortuguese: () => void
   onOpen: () => void
   onSettings: () => void
 }
@@ -33,6 +34,8 @@ export function refreshTray(): void {
     Menu.buildFromTemplate([
       { label: 'Melhorar texto copiado', accelerator: label(shortcuts.assist), click: actions.onAssist },
       { label: 'Melhorar e ouvir texto copiado', accelerator: label(shortcuts.listen), click: actions.onListen },
+      { label: 'Traduzir texto copiado para português', accelerator: label(shortcuts.portuguese), click: actions.onPortuguese },
+      { type: 'separator' },
       { label: 'Abrir janela', click: actions.onOpen },
       { label: 'Configurações…', click: actions.onSettings },
       { type: 'separator' },

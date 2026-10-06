@@ -1,16 +1,20 @@
 import type { ReactNode } from 'react'
+import type { Tone } from '../../../shared/ipc'
 import type { Session } from '../hooks/useAssistant'
 import { Button } from './Button'
 import { AlertIcon, KeyIcon } from './icons'
+import { ToneSelector } from './ToneSelector'
 
 type ResultViewProps = {
   session: Session
   onOpenSettings: () => void
   onRetry: () => void
+  onTone: (tone: Tone) => void
 }
 
-export function ResultView({ session, onOpenSettings, onRetry }: ResultViewProps) {
-  const { source, result, status, provider } = session
+export function ResultView({ session, onOpenSettings, onRetry, onTone }: ResultViewProps) {
+  const { source, result, status, direction } = session
+  const busy = status === 'loading' || status === 'streaming'
 
   return (
     <div className="scroll-thin flex-1 overflow-y-auto px-5 py-4">
@@ -23,22 +27,17 @@ export function ResultView({ session, onOpenSettings, onRetry }: ResultViewProps
 
       <div className="my-4 h-px bg-white/[0.06]" />
 
-      <section aria-live="polite" aria-busy={status === 'loading' || status === 'streaming'}>
-        <div className="flex items-baseline justify-between gap-3">
-          <Label accent>Inglês</Label>
-          {provider && status !== 'error' && (
-            <span className="truncate text-[11px] text-zinc-500" title={provider.model}>
-              {provider.fallback && <span className="text-amber-300/80">fallback · </span>}
-              via {provider.name}
-            </span>
-          )}
+      <section aria-live="polite" aria-busy={busy}>
+        <div className="flex h-7 items-center justify-between gap-3">
+          <Label accent>{direction === 'to-portuguese' ? 'Português' : 'Inglês'}</Label>
+          {direction === 'to-english' && <ToneSelector value={session.tone} onChange={onTone} disabled={busy} />}
         </div>
         {status === 'error' ? (
           <ErrorCard session={session} onOpenSettings={onOpenSettings} onRetry={onRetry} />
         ) : status === 'loading' ? (
           <Skeleton />
         ) : (
-          <p className="mt-1.5 select-text whitespace-pre-wrap break-words text-[15px] leading-7 text-zinc-50">
+          <p className="mt-1 select-text whitespace-pre-wrap break-words text-[15px] leading-7 text-zinc-50">
             {result}
             {status === 'streaming' && (
               <span className="ml-0.5 inline-block h-[1.1em] w-[2px] translate-y-[3px] rounded-full bg-indigo-300 motion-safe:animate-blink" />
@@ -60,7 +59,7 @@ function Label({ children, accent = false }: { children: ReactNode; accent?: boo
 
 function Skeleton() {
   return (
-    <div className="mt-3 space-y-2.5" role="status" aria-label="Escrevendo">
+    <div className="mt-2.5 space-y-2.5" role="status" aria-label="Escrevendo">
       {['w-11/12', 'w-full', 'w-7/12'].map((width) => (
         <div key={width} className={`relative h-3.5 overflow-hidden rounded-full bg-white/[0.06] ${width}`}>
           <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent motion-safe:animate-shimmer" />
@@ -70,7 +69,7 @@ function Skeleton() {
   )
 }
 
-function ErrorCard({ session, onOpenSettings, onRetry }: ResultViewProps) {
+function ErrorCard({ session, onOpenSettings, onRetry }: Omit<ResultViewProps, 'onTone'>) {
   const code = session.error?.code
   const needsSetup = code === 'missing-key'
   const fixInSettings = needsSetup || code === 'invalid-key' || code === 'model'
@@ -79,7 +78,7 @@ function ErrorCard({ session, onOpenSettings, onRetry }: ResultViewProps) {
     : { card: 'border-rose-400/20 bg-rose-400/[0.07]', icon: 'text-rose-300', text: 'text-rose-50' }
 
   return (
-    <div role="alert" className={`mt-2.5 flex items-start gap-3 rounded-xl border p-3.5 ${tone.card}`}>
+    <div role="alert" className={`mt-2 flex items-start gap-3 rounded-xl border p-3.5 ${tone.card}`}>
       <span className={`mt-0.5 shrink-0 ${tone.icon}`}>{needsSetup ? <KeyIcon /> : <AlertIcon />}</span>
       <div className="min-w-0">
         <p className={`select-text break-words text-[13px] leading-5 ${tone.text}`}>{session.error?.message}</p>

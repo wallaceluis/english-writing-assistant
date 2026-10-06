@@ -6,7 +6,7 @@ export const IPC = {
   ready: 'app:ready',
   navigate: 'app:navigate',
   sessionEvent: 'session:event',
-  retry: 'session:retry',
+  run: 'session:run',
   hide: 'window:hide',
   setAutoHide: 'window:set-auto-hide',
   copy: 'clipboard:write',
@@ -15,20 +15,43 @@ export const IPC = {
   removeProvider: 'settings:remove-provider',
   moveProvider: 'settings:move-provider',
   saveShortcut: 'settings:save-shortcut',
+  savePreferences: 'settings:save-preferences',
   suspendShortcuts: 'shortcuts:suspend'
 } as const
 
 export type View = 'main' | 'settings'
+
+/** `to-english` translates Portuguese or polishes English; `to-portuguese` is for reading what others wrote. */
+export type Direction = 'to-english' | 'to-portuguese'
+
+/** How the English should sound. */
+export type Tone = 'professional' | 'casual' | 'concise'
+
+export const TONES: ReadonlyArray<{ id: Tone; label: string }> = [
+  { id: 'professional', label: 'Profissional' },
+  { id: 'casual', label: 'Casual' },
+  { id: 'concise', label: 'Conciso' }
+]
+
+export const MAX_SOURCE_LENGTH = 12_000
+export const MAX_GLOSSARY_LENGTH = 2_000
 
 /** What the model did: translated from Portuguese, or polished existing English. */
 export type Mode = 'translated' | 'polished'
 
 export type ErrorCode = 'missing-key' | 'invalid-key' | 'model' | 'quota' | 'rate-limit' | 'network' | 'too-long' | 'unknown'
 
-// A session is one press of the global shortcut. `source` is empty when the clipboard has no text.
+/** Everything needed to produce a result again: retry, another tone, an entry reopened later. */
+export type RunRequest = {
+  source: string
+  direction: Direction
+  tone: Tone
+}
+
+// A session is one text going through the model. `source` is empty when there was no text to read.
 export type SessionEvent =
   /** With `speak`, the result is read aloud as soon as it is done. */
-  | { type: 'start'; id: number; source: string; speak: boolean }
+  | ({ type: 'start'; id: number; speak: boolean } & RunRequest)
   /** A provider is about to answer. With `fallback`, the previous one failed and its partial text is discarded. */
   | { type: 'provider'; id: number; name: string; model: string; fallback: boolean }
   | { type: 'mode'; id: number; mode: Mode }
@@ -47,10 +70,18 @@ export type ProviderState = {
   baseURL: string
 }
 
+export type Preferences = {
+  /** Tone used by the shortcuts; another one can be picked per result. */
+  tone: Tone
+  /** One entry per line: a term to keep as is, or "term = translation". */
+  glossary: string
+}
+
 export type PublicSettings = {
   /** Active providers first, in fallback order. */
   providers: ProviderState[]
   shortcuts: Shortcuts
+  preferences: Preferences
 }
 
 export type ProviderPatch = {
@@ -71,8 +102,8 @@ export interface AssistApi {
   /** When false, the window stays open after losing focus. */
   setAutoHide(enabled: boolean): Promise<void>
   copy(text: string): Promise<void>
-  /** Runs the last captured text through the model again. */
-  retry(): Promise<void>
+  /** Starts a session for a text the renderer already has. */
+  run(request: RunRequest): Promise<void>
   getSettings(): Promise<PublicSettings>
   /** Saves and activates a provider. */
   saveProvider(patch: ProviderPatch): Promise<SaveResult>
@@ -82,6 +113,7 @@ export interface AssistApi {
   moveProvider(id: ProviderId, direction: -1 | 1): Promise<void>
   /** Fails when the accelerator is invalid or taken by another program. */
   saveShortcut(action: ShortcutAction, accelerator: string): Promise<SaveResult>
+  savePreferences(patch: Partial<Preferences>): Promise<void>
   /** Turns the global shortcuts off while the settings screen records a new one. */
   suspendShortcuts(suspended: boolean): Promise<void>
   /** Listeners return their unsubscribe function. */
