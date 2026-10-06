@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply select-none overflow-hidden bg-transparent font-sans text-zinc-100 antialiased;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-indigo-400/70;
+  }
+}
+
+@layer utilities {
+  .drag {
+    -webkit-app-region: drag;
+  }
+
+  .no-drag {
+    -webkit-app-region: no-drag;
+  }
+
+  .scroll-thin::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  .scroll-thin::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 9999px;
+    background-color: rgba(255, 255, 255, 0.14);
+    background-clip: content-box;
+  }
+
+  .scroll-thin::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.24);
+  }
+}
