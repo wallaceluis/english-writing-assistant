@@ -101,6 +101,19 @@ export const ChevronRightIcon = (props: IconProps) => (
   </Icon>
 )
 
+export const SpeakerIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" />
+    <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />
+  </Icon>
+)
+
+export const StopIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="6.5" y="6.5" width="11" height="11" rx="2" />
+  </Icon>
+)
+
 export const ClipboardIcon = (props: IconProps) => (
   <Icon {...props}>
     <rect x="5.5" y="5" width="13" height="16" rx="2.5" />

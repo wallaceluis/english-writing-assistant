@@ -8,6 +8,7 @@ import { ResultView } from './components/ResultView'
 import { SettingsView } from './components/SettingsView'
 import { Badge, TitleBar } from './components/TitleBar'
 import { useAssistant, type Session } from './hooks/useAssistant'
+import { useSpeech } from './hooks/useSpeech'
 
 // Long enough to see the "Copiado" confirmation before the window goes away.
 const HIDE_AFTER_COPY_MS = 450
@@ -20,6 +21,7 @@ export default function App() {
   const [view, setView] = useState<View>('main')
   const [copied, setCopied] = useState(false)
   const hideTimer = useRef<number>()
+  const speech = useSpeech()
 
   useEffect(() => window.api.onNavigate(setView), [])
 
@@ -27,8 +29,9 @@ export default function App() {
   useEffect(() => {
     window.clearTimeout(hideTimer.current)
     setCopied(false)
+    speech.stop()
     if (session) setView('main')
-  }, [session?.id])
+  }, [session?.id, speech.stop])
 
   const result = session?.status === 'done' ? session.result : ''
   const canCopy = view === 'main' && result !== ''
@@ -47,6 +50,11 @@ export default function App() {
     }, HIDE_AFTER_COPY_MS)
   }, [canCopy, copied, result])
 
+  const toggleListen = useCallback(() => {
+    if (speech.speaking) speech.stop()
+    else if (canCopy) speech.speak(result)
+  }, [speech.speaking, speech.stop, speech.speak, canCopy, result])
+
   const closeSettings = useCallback(() => {
     setView('main')
     // The failed request was most likely waiting on a provider that has just been configured.
@@ -64,11 +72,14 @@ export default function App() {
       } else if (event.ctrlKey && event.key.toLowerCase() === 'r') {
         event.preventDefault()
         if (canRetry) retry()
+      } else if (event.ctrlKey && event.key.toLowerCase() === 'l') {
+        event.preventDefault()
+        toggleListen()
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [view, canCopy, canRetry, copy, closeSettings])
+  }, [view, canCopy, canRetry, copy, closeSettings, toggleListen])
 
   return (
     // The padding leaves transparent room for the card's shadow inside the frameless window.
@@ -95,7 +106,14 @@ export default function App() {
         ) : session?.source ? (
           <>
             <ResultView session={session} onOpenSettings={() => setView('settings')} onRetry={retry} />
-            <Footer canCopy={canCopy} copied={copied} onCopy={copy} onRetry={canRetry ? retry : undefined} />
+            <Footer
+              canCopy={canCopy}
+              copied={copied}
+              onCopy={copy}
+              onRetry={canRetry ? retry : undefined}
+              onListen={speech.available ? toggleListen : undefined}
+              listening={speech.speaking}
+            />
           </>
         ) : (
           <EmptyState clipboardEmpty={session !== null} />

@@ -21,9 +21,12 @@ Não precisa de `Ctrl+C`: o app copia a seleção por você e depois devolve o q
 | `Ctrl+Alt+E` | Global: lê o texto selecionado e abre a janela          |
 | `Enter`      | Copia o resultado e fecha a janela                     |
 | `Ctrl+R`     | Refaz o texto (gera outra versão)                      |
+| `Ctrl+L`     | Ouve o resultado em inglês (ou para a leitura)         |
 | `Esc`        | Fecha a janela                                         |
 
 Clicar fora da janela também a minimiza, e o botão na barra de tarefas a reabre. O ícone na bandeja tem um menu com **Melhorar texto copiado**, **Abrir janela**, **Configurações…**, **Iniciar com o Windows** e **Sair**.
+
+O botão **Ouvir** lê o resultado em voz alta com as vozes em inglês instaladas no Windows: é gratuito, funciona offline e não usa nenhuma API. Ele só aparece quando existe uma voz em inglês no sistema (*Configurações → Hora e idioma → Fala*).
 
 ## Requisitos
 

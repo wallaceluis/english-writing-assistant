@@ -1,5 +1,5 @@
 import { Button } from './Button'
-import { CheckIcon, CopyIcon, RefreshIcon } from './icons'
+import { CheckIcon, CopyIcon, RefreshIcon, SpeakerIcon, StopIcon } from './icons'
 import { Kbd } from './Kbd'
 
 type FooterProps = {
@@ -7,9 +7,12 @@ type FooterProps = {
   copied: boolean
   onCopy: () => void
   onRetry?: () => void
+  /** Absent when Windows has no English voice installed. */
+  onListen?: () => void
+  listening: boolean
 }
 
-export function Footer({ canCopy, copied, onCopy, onRetry }: FooterProps) {
+export function Footer({ canCopy, copied, onCopy, onRetry, onListen, listening }: FooterProps) {
   return (
     <footer className="flex h-[52px] shrink-0 items-center justify-between border-t border-white/[0.06] pl-5 pr-3">
       <div className="flex items-center gap-4 text-[11.5px] text-zinc-500">
@@ -22,6 +25,12 @@ export function Footer({ canCopy, copied, onCopy, onRetry }: FooterProps) {
       </div>
 
       <div className="flex items-center gap-1.5">
+        {onListen && (
+          <Button onClick={onListen} disabled={!canCopy} title={listening ? 'Parar (Ctrl+L)' : 'Ouvir em inglês (Ctrl+L)'}>
+            {listening ? <StopIcon width="14" height="14" /> : <SpeakerIcon width="14" height="14" />}
+            {listening ? 'Parar' : 'Ouvir'}
+          </Button>
+        )}
         {onRetry && (
           <Button onClick={onRetry} title="Refazer (Ctrl+R)">
             <RefreshIcon width="14" height="14" /> Refazer
