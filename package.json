@@ -2,7 +2,7 @@
   "name": "english-writing-assistant",
   "productName": "English Assist",
   "version": "1.1.0",
-  "description": "Assistente de escrita em inglês que vive na bandeja do Windows: traduz e refina o texto do clipboard com um atalho global.",
+  "description": "Assistente de escrita em ingl\u00eas que vive na bandeja do Windows: traduz e refina o texto do clipboard com um atalho global.",
   "main": "./out/main/index.js",
   "author": "Wallace Luis",
   "license": "MIT",
@@ -15,7 +15,8 @@
     "icons": "node scripts/generate-icons.mjs",
     "dist": "npm run build && electron-builder --win --publish never",
     "dist:dir": "npm run build && electron-builder --win --dir --publish never",
-    "release": "npm run build && electron-builder --win --publish always"
+    "release": "npm run build && electron-builder --win --publish always",
+    "test": "vitest run"
   },
   "dependencies": {
     "electron-updater": "^6.8.9",
@@ -35,6 +36,7 @@
     "react-dom": "^18.3.1",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",
-    "vite": "^5.4.21"
+    "vite": "^5.4.21",
+    "vitest": "^3.2.7"
   }
 }

@@ -10,6 +10,7 @@ import {
   type PublicSettings,
   type SaveResult
 } from '../shared/ipc'
+import { isSafeBaseURL } from '../shared/url'
 import { getPreset, isProviderId, PROVIDERS, type ProviderId } from '../shared/providers'
 import { DEFAULT_SHORTCUTS, type ShortcutAction, type Shortcuts } from '../shared/shortcuts'
 
@@ -140,16 +141,6 @@ export function getPublicSettings(): PublicSettings {
     preferences: getPreferences(),
     geminiKey: getGeminiKey() !== null,
     version: app.getVersion()
-  }
-}
-
-// Keys must not travel in clear text, except to a server on this machine.
-function isSafeBaseURL(value: string): boolean {
-  try {
-    const url = new URL(value)
-    return url.protocol === 'https:' || (url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname))
-  } catch {
-    return false
   }
 }
 

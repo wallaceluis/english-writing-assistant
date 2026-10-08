@@ -1,5 +1,7 @@
 # English Assist
 
+[![CI](https://github.com/wallaceluis/english-writing-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/wallaceluis/english-writing-assistant/actions/workflows/ci.yml)
+
 Assistente de escrita em inglês que vive na barra de tarefas do Windows. Selecione um texto em qualquer programa, pressione um atalho e receba a versão em inglês: numa janela flutuante, direto por cima da seleção ou em voz alta.
 
 - **Texto em português** → traduzido para inglês nativo.
@@ -177,6 +179,7 @@ O electron-builder baixa um pacote (`winCodeSign`) que contém links simbólicos
 | `npm run build`     | Checa os tipos e compila main, preload e renderer para `out/`  |
 | `npm start`         | Roda a versão compilada de `out/`                              |
 | `npm run typecheck` | Só a checagem de tipos do TypeScript                           |
+| `npm test`          | Testes (Vitest): streaming com cabeçalho `LANG`, erros por provedor, prompts e URLs |
 | `npm run dist`      | Compila e gera o instalador do Windows em `release/`           |
 | `npm run dist:dir`  | Compila e gera só a pasta descompactada, sem instalador        |
 | `npm run release`   | Compila e envia o instalador para uma Release do GitHub         |
